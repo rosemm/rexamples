@@ -1,4 +1,4 @@
-# Plotting the results of your logistic regression Part 2: Continuous by ccontinuous interaction
+# Plotting the results of your logistic regression Part 2: Continuous by continuous interaction
 Last time, we ran a nice, complicated logistic regression and made a plot of the a continuous by categorical interaction. This time, we'll use the same model, but plot the interaction between the two continuous predictors instead, which is a little weirder (hence part 2).
 
 Use the model from [the Part 1 code](https://github.com/rosemm/rexamples/blob/master/logistic_regression_plotting_part1.Rmd).
@@ -55,7 +55,7 @@ Just like last time, we'll need to plug in values for all but one variable (X1, 
 
 Whatever you decide, I recommend checking to make sure the "representative" values you're plugging in actually make sense given your data. 
 For example, you may not actually have any cases with X2 value 1SD above the mean, in which case maybe you just want to put in max(X2) for the high case instead. 
-It's kinda weird to plot your models at values that don't actually exist in your data (cue Twighlight Zone music).
+It's kinda weird to plot your models at values that don't actually exist in your data (cue Twilight Zone music).
 
 ```{r X2_values}
 summary(data$X2)
@@ -116,7 +116,7 @@ X2_h_probs <- exp(X2_h_logits)/(1 + exp(X2_h_logits))
 
 ## Plot time!
 ```{r plot}
-# We'll start by plotting the ref group:
+# We'll start by plotting the low X2 group:
 plot(X1_range, X2_l_probs, 
      ylim=c(0,1),
      type="l", 
@@ -126,14 +126,14 @@ plot(X1_range, X2_l_probs,
      xlab="X1", ylab="P(outcome)", main="Probability of super important outcome")
 
 
-# Add the line for people who are in the b group
+# Add the line for mean X2
 lines(X1_range, X2_m_probs, 
       type="l", 
       lwd=3, 
       lty=3, 
       col="green")
 
-# Add the line for people who are in the c group
+# Add the line for high X2
 lines(X1_range, X2_h_probs, 
       type="l", 
       lwd=3, 
