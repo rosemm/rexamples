@@ -1,0 +1,160 @@
+# Plotting the results of your logistic regression Part 2: Continuous by ccontinuous interaction
+Last time, we ran a nice, complicated logistic regression and made a plot of the a continuous by categorical interaction. This time, we'll use the same model, but plot the interaction between the two continuous predictors instead, which is a little weirder (hence part 2).
+
+Use the model from [the Part 1 code](https://github.com/rosemm/rexamples/blob/master/logistic_regression_plotting_part1.Rmd).
+```{r last_time, echo=FALSE}
+set.seed(24601) # setting this so the random results will be repeatable 
+
+library(MASS)
+covmat <- matrix(c(1.0,   0.2,   0.6, 
+                   0.2,   1.0,  -0.5, 
+                   0.6,  -0.5,   1.0), nrow=3) # the true cov matrix for my data
+data <- mvrnorm(300, mu=c(0,0,0), Sigma=covmat) # generate random data that match that cov matrix
+colnames(data) <- c("X1", "X2", "DV")
+data <- as.data.frame(data)
+data$group <- gl(n=3, k=ceiling(nrow(data)/3), labels=c("a", "b", "c", "d"))
+# add some group differences and interaction stuff...
+data$DV <- with(data, ifelse(group=="c" & X1 > 0, DV+rnorm(n=1, mean=1), 
+                             ifelse(group=="b" & X1 > 0, DV+rnorm(n=1, mean=2) , DV)))
+# make DV binary
+data$DV <- ifelse(data$DV > 0, 1, 0)
+
+# note this use of exponent in a formula will give us all 2-way interactions
+model <- glm(DV ~ (X1 + X2 + group)^2, 
+             data=data, na.action="na.exclude",  family="binomial") 
+             
+# save the coefficient values so we can use them in the equations
+b0 <- model$coef[1] # intercept
+X1 <- model$coef[2]
+X2 <- -model$coef[3]
+groupb <- model$coef[4]
+groupc <- model$coef[5]
+X1.X2 <- model$coef[6]
+X1.groupb <- model$coef[7]
+X1.groupc <- model$coef[8]
+X2.groupb <- model$coef[9]
+X2.groupc <- model$coef[10]
+```
+
+Here's that model:
+
+```{r model}
+summary(model)
+```
+
+And we already saved the coefficients individually for use in the equations last time. 
+
+## Calculate probabilities for the plot
+Again, we'll put X1 on the x-axis. That's the only variable we'll enter as a whole range.
+```{r x_axis_var}
+X1_range <- seq(from=min(data$X1), to=max(data$X1), by=.01)
+```
+
+Next, compute the equations for each line in logit terms. 
+Just like last time, we'll need to plug in values for all but one variable (X1, which is going on the x-axis of the plot), but this time we'll pick some representative values for the other continuous predictor, X2, and plug those in to get a separate line for each representative value of X2. Typical choices are high (1SD above the mean), medium (the mean), and low (1SD below the mean) X2. Another great choice is max, median, and min. You can also do 4 or 5 lines instead of just 3, if you want. It's your party. 
+
+Whatever you decide, I recommend checking to make sure the "representative" values you're plugging in actually make sense given your data. 
+For example, you may not actually have any cases with X2 value 1SD above the mean, in which case maybe you just want to put in max(X2) for the high case instead. 
+It's kinda weird to plot your models at values that don't actually exist in your data (cue Twighlight Zone music).
+
+```{r X2_values}
+summary(data$X2)
+(X2_l <- mean(data$X2) - sd(data$X2) )
+(X2_m <- mean(data$X2) )
+(X2_h <- mean(data$X2) + sd(data$X2) )
+```
+
+Now we can go ahead and plug those values into the rest of the equation to get the expected logits across the range of X1 for each of our "groups" (hypothetical low X2 people, hypothetical average X2 people, hypothetical high X2 people).
+
+
+**Remember, these equations need to include every coefficient for the model you ran, whether or not you actually care about plotting them.**
+
+
+In this case, lots of it will just drop out because I'll be plugging in 0's for all of the dummy codes, but I encourage you to keep the terms in your code, so you don't forget that all of those predictors are still in your model, you're just holding them constant while you plot.
+We're not interested in plotting the categorical predictor right now, but it's still there in the model, so we need to just pick a group from it and enter the dummy codes for it. 
+The plot will show us the interaction between X1 and X2 for the reference group (and since we didn't allow a 3-way interaction between X1, X2, and group, the X1 by X2 interaction will look the same in each group -- for 3-way interactions, you'll have to wait for part 3!)
+
+```{r prob_eqns}
+X2_l_logits <- b0 + 
+  X1*X1_range + 
+  X2*X2_l + 
+  groupb*0 + 
+  groupc*0 + 
+  X1.X2*X1_range*X2_l + 
+  X1.groupb*X1_range*0 + 
+  X1.groupc*X1_range*0 + 
+  X2.groupb*X2_l*0 + 
+  X2.groupc*X2_l*0 
+
+X2_m_logits <- b0 + 
+  X1*X1_range + 
+  X2*X2_m + 
+  groupb*0 + 
+  groupc*0 + 
+  X1.X2*X1_range*X2_m + 
+  X1.groupb*X1_range*0 + 
+  X1.groupc*X1_range*0 + 
+  X2.groupb*X2_m*0 + 
+  X2.groupc*X2_m*0 
+
+X2_h_logits <- b0 + 
+  X1*X1_range + 
+  X2*X2_h + 
+  groupb*0 + 
+  groupc*0 + 
+  X1.X2*X1_range*X2_h + 
+  X1.groupb*X1_range*0 + 
+  X1.groupc*X1_range*0 + 
+  X2.groupb*X2_h*0 + 
+  X2.groupc*X2_h*0 
+
+# Compute the probibilities (this is what will actually get plotted):
+X2_l_probs <- exp(X2_l_logits)/(1 + exp(X2_l_logits))
+X2_m_probs <- exp(X2_m_logits)/(1 + exp(X2_m_logits))
+X2_h_probs <- exp(X2_h_logits)/(1 + exp(X2_h_logits))
+```
+
+## Plot time!
+```{r plot}
+# We'll start by plotting the ref group:
+plot(X1_range, X2_l_probs, 
+     ylim=c(0,1),
+     type="l", 
+     lwd=3, 
+     lty=2, 
+     col="red", 
+     xlab="X1", ylab="P(outcome)", main="Probability of super important outcome")
+
+
+# Add the line for people who are in the b group
+lines(X1_range, X2_m_probs, 
+      type="l", 
+      lwd=3, 
+      lty=3, 
+      col="green")
+
+# Add the line for people who are in the c group
+lines(X1_range, X2_h_probs, 
+      type="l", 
+      lwd=3, 
+      lty=4, 
+      col="blue")
+
+# add a horizontal line at p=.5
+abline(h=.5, lty=2)
+```
+
+Or, you can do it in ggplot2!
+
+```{r ggplot2}
+library(ggplot2); library(tidyr)
+# first you have to get the information into a long dataframe, which is what ggplot likes :)
+plot.data <- data.frame(low=X2_l_probs, mean=X2_m_probs, high=X2_h_probs, X1=X1_range)
+plot.data <- gather(plot.data, key=X2_level, value=prob, -X1) # this means gather all of the columns except X1
+head(plot.data)
+
+ggplot(plot.data, aes(x=X1, y=prob, color=X2_level)) + 
+  geom_line(lwd=2) + 
+  labs(x="X1", y="P(outcome)", title="Probability of super important outcome") 
+```
+
