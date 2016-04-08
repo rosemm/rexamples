@@ -156,3 +156,27 @@ ggplot(plot.data, aes(x=X1, y=prob, color=group)) + # asking it to set the color
   labs(x="X1", y="P(outcome)", title="Probability of super important outcome") 
 ```
 
+## Using `predict` to get expected values
+
+The `predict` function in R is really useful. You can give it any model, and any new
+data set with columns the have the same names as your predictor variables, and it
+will return to you the predicted value for your dependent variable. This is nice because
+you don't have to compute this yourself, and in the case of logistic regression this means it
+can automatically give you predicted DV values on on the original response scale -- that is, 
+as a probability, rather than a logit.
+
+```{r predict}
+#make a new data frame with the X values you want to predict
+X1_range_data <- as.data.frame(expand.grid(X1=X1_range, X2=X2_val, group=c('a', 'b', 'c')))
+head(X1_range_data) 
+
+#use `predict` to get the probability using type='response' rather than 'link' 
+X1_range_data$prob <- predict(model, newdata=X1_range_data, type = 'response')
+head(X1_range_data) 
+
+#same plot as above:
+ggplot(X1_range_data, aes(x=X1, y=prob, color=group))+
+  geom_line(lwd=2) + 
+  labs(x="X1", y="P(outcome)", title="Probability of super important outcome") 
+```
+
