@@ -12,7 +12,7 @@ covmat <- matrix(c(1.0,   0.2,   0.6,
 data <- mvrnorm(300, mu=c(0,0,0), Sigma=covmat) # generate random data that match that cov matrix
 colnames(data) <- c("X1", "X2", "DV")
 data <- as.data.frame(data)
-data$group <- gl(n=3, k=ceiling(nrow(data)/3), labels=c("a", "b", "c", "d"))
+data$group <- gl(n=3, k=ceiling(nrow(data)/3), labels=c("a", "b", "c"))
 # add some group differences and interaction stuff...
 data$DV <- with(data, ifelse(group=="c" & X1 > 0, DV+rnorm(n=1, mean=1), 
                              ifelse(group=="b" & X1 > 0, DV+rnorm(n=1, mean=2) , DV)))
@@ -50,8 +50,14 @@ Again, we'll put X1 on the x-axis. That's the only variable we'll enter as a who
 X1_range <- seq(from=min(data$X1), to=max(data$X1), by=.01)
 ```
 
-Next, compute the equations for each line in logit terms. 
-Just like last time, we'll need to plug in values for all but one variable (X1, which is going on the x-axis of the plot), but this time we'll pick some representative values for the other continuous predictor, X2, and plug those in to get a separate line for each representative value of X2. Typical choices are high (1SD above the mean), medium (the mean), and low (1SD below the mean) X2. Another great choice is max, median, and min. You can also do 4 or 5 lines instead of just 3, if you want. It's your party. 
+Next, compute the equations for each line in logit terms.
+
+### Pick some representative values for the other continuous variable 
+Just like last time, we'll need to plug in values for all but one variable (X1, which is going on the x-axis of the plot), but this time we'll pick some representative values for the other continuous predictor, X2, and plug those in to get a separate line for each representative value of X2. 
+Typical choices are high (1SD above the mean), medium (the mean), and low (1SD below the mean) X2. 
+Another great choice is max, median, and min. 
+You can also do 4 or 5 lines instead of just 3, if you want. 
+It's your party. 
 
 Whatever you decide, I recommend checking to make sure the "representative" values you're plugging in actually make sense given your data. 
 For example, you may not actually have any cases with X2 value 1SD above the mean, in which case maybe you just want to put in max(X2) for the high case instead. 
@@ -66,13 +72,16 @@ summary(data$X2)
 
 Now we can go ahead and plug those values into the rest of the equation to get the expected logits across the range of X1 for each of our "groups" (hypothetical low X2 people, hypothetical average X2 people, hypothetical high X2 people).
 
+### If you ran your model in SPSS and you just have the coefficients...
+You'll need to actually calculate the predicted probabilities yourself. 
+Write out the equation for your model and plug in values for everything except the variable that will go on the x-axis.
 
 **Remember, these equations need to include every coefficient for the model you ran, whether or not you actually care about plotting them.**
 
 
-In this case, lots of it will just drop out because I'll be plugging in 0's for all of the dummy codes, but I encourage you to keep the terms in your code, so you don't forget that all of those predictors are still in your model, you're just holding them constant while you plot.
+In this case, lots of it will just drop out because I'll be plugging in 0's for all of the dummy codes (we're only looking at group a), but I encourage you to keep the terms in your code, so you don't forget that all of those predictors are still in your model, you're just holding them constant while you plot.
 We're not interested in plotting the categorical predictor right now, but it's still there in the model, so we need to just pick a group from it and enter the dummy codes for it. 
-The plot will show us the interaction between X1 and X2 for the reference group (and since we didn't allow a 3-way interaction between X1, X2, and group, the X1 by X2 interaction will look the same in each group -- for 3-way interactions, you'll have to wait for part 3!)
+The plot will show us the interaction between X1 and X2 for the reference group (for 3-way interactions, you'll have to wait for part 3!).
 
 ```{r prob_eqns}
 X2_l_logits <- b0 + 
@@ -114,7 +123,31 @@ X2_m_probs <- exp(X2_m_logits)/(1 + exp(X2_m_logits))
 X2_h_probs <- exp(X2_h_logits)/(1 + exp(X2_h_logits))
 ```
 
+### If you ran your model in R, then you can just use predict()
+Easy peasy! And, most importantly, less typing --- which means fewer errors. 
+Thanks to [John](https://github.com/jflournoy) for reminding me of this handy function!
+You make a new data frame with the predictor values you want to use (i.e. the whole range for X1, group a, and the representative values we picked for X2), 
+and then when you run predict() on it, for each row in the data frame it will generate the predicted value for your DV from the model you saved.
+The expand.grid() function is a quick and easy way to make a data frame out of all possible combinations of the variables provided. Perfect for this situation!
+
+```{r predict_probs}
+#make a new data frame with the X values you want to predict 
+generated_data <- as.data.frame(expand.grid(X1=X1_range, X2=c(X2_l, X2_m, X2_h), group="a") )
+head(generated_data)
+summary(generated_data)
+
+#use `predict` to get the probability using type='response' rather than 'link' 
+generated_data$prob <- predict(model, newdata=generated_data, type = 'response')
+head(generated_data) 
+
+# let's make a factor version of X2, so we can do gorgeous plotting stuff with it later :)
+generated_data$X2_level <- factor(generated_data$X2, labels=c("low (-1SD)", "mean", "high (+1SD)"), ordered=T)
+head(generated_data) 
+```
+
+
 ## Plot time!
+In base R...
 ```{r plot}
 # We'll start by plotting the low X2 group:
 plot(X1_range, X2_l_probs, 
@@ -149,8 +182,15 @@ Or, you can do it in ggplot2!
 ```{r ggplot2}
 library(ggplot2); library(tidyr)
 # first you have to get the information into a long dataframe, which is what ggplot likes :)
+
+# if you calculated the predicted probabilities by writing out the equations, you can combine that all into a dataframe now, and use gather() to make it long
 plot.data <- data.frame(low=X2_l_probs, mean=X2_m_probs, high=X2_h_probs, X1=X1_range)
 plot.data <- gather(plot.data, key=X2_level, value=prob, -X1) # this means gather all of the columns except X1
+
+# if you used predict(), then everything is already in a nice dataframe for you
+plot.data <- generated_data
+
+# check out your plotting data
 head(plot.data)
 
 ggplot(plot.data, aes(x=X1, y=prob, color=X2_level)) + 
