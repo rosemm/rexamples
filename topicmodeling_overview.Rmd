@@ -1,0 +1,61 @@
+# Topic modeling overview
+
+Topic modeling is a way to automatically analyze a set of documents and uncover themes or topics within them.
+It's not as clever as a human reader, of course, but I think you'll find that topic modeling produces surprisingly interpretable results!
+
+## What are topics?
+To run a topic modeling analysis, you need a collection of documents. 
+Typically, you'll do some pre-processing of those documents to facilitate the discovery of topics. 
+There are often three steps: 
+1) removes some common, uninformative words (e.g. "the", "and"), called *stop words*, 
+2) remove words that only occur in very few documents (a typical threshold is that each word must in at least 5 documents, but you can move that up or down depending on your analysis), and 3) make different forms of the same word the same (e.g. "see", "sees", "seeing"), a process called *stemming*. 
+
+This leaves you with a set of cleaned documents, and a list of all of the words left in those documents (the "vocabulary"). Each topic is a distribution over the vocabulary. Here's a toy example, so you can visualize what I mean:
+
+```{r topic_viz}
+library(tidyr); library(ggplot2)
+vocab <- c("garlic", "hard", "cook", "collar", "measure", "write", "cup", "knot", "suit", "edit")
+topic1 <- data.frame(topic=1, vocabulary=c(rep(1,5), 
+            rep(2, 1), 
+            rep(3, 4),
+            rep(4, 0),
+            rep(5, 3),
+            rep(6, 0),
+            rep(7, 4),
+            rep(8, 0),
+            rep(9, 0),
+            rep(10, 0)))
+topic2 <- data.frame(topic=2, vocabulary=c(rep(1,0), 
+            rep(2, 0), 
+            rep(3, 0),
+            rep(4, 4),
+            rep(5, 3),
+            rep(6, 0),
+            rep(7, 0),
+            rep(8, 4),
+            rep(9, 4),
+            rep(10, 0)))
+topic3 <- data.frame(topic=3, vocabulary=c(rep(1,0), 
+            rep(2, 4), 
+            rep(3, 0),
+            rep(4, 0),
+            rep(5, 0),
+            rep(6, 4),
+            rep(7, 0),
+            rep(8, 1),
+            rep(9, 0),
+            rep(10, 3)))
+topic.data <- rbind(topic1, topic2, topic3)
+topic.data$topic <- as.factor(topic.data$topic)
+
+ggplot(topic.data, aes(x=vocabulary)) +
+  geom_density(aes(fill=topic, color=topic), alpha=.5, adjust = 1/3) +
+  scale_x_continuous(breaks=1:10, labels=vocab) +
+  theme(axis.text.y=element_blank(), axis.ticks=element_blank()) +
+  labs(y=NULL)
+
+```
+
+
+How to use the stm package (from the [stm vignette](https://cran.r-project.org/web/packages/stm/vignettes/stmVignette.pdf)):
+![stm workflow](/Users/TARDIS/Dropbox/RClub/stm_package_workflow.png)
