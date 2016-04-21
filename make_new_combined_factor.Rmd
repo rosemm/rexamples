@@ -1,0 +1,55 @@
+In this example, we'll take a set of yes-no variables and combine them all into one factor that codes for the pattern of results for each case. 
+For example, let's say you collected data from 20 participants asking them about whether or not they've experienced discrimination in a few different contexts: at work, at school, and in the community in general. 
+Your participants indicated yes or no as to whether they'd experienced discrimination in each context.
+Here's some made-up data:
+
+```{r generate_data}
+# make a toy data frame that has some 0-and-1 variables, for the different trauma types
+data <- data.frame(dis_work=sample(c(0,1), size=20, replace=T), 
+                   dis_school=sample(c(0,1), size=20, replace=T),
+                   dis_comm=sample(c(0,1), size=20, replace=T))
+# take a look at that data frame:
+head(data)
+```
+
+There are a number of ways you might want to use these data, depending on your research question. 
+One approach would be to just sum across each context, so that for each participant you would have a measure of the total number of contexts in which they have experienced discrimination.
+Another approach would be to use each of these variables separately in different analyses --- maybe you have three different research questions (about what predicts discrimination in the workplace, in school, and in the community), and you want to run three different logistic regressions, one for each context.
+
+For this example, though, let's say that you think different combinations of experience may operate differently; someone who has experienced discrimination at work and in the community but not at school may have a qualitatively different experience from someone who has experienced discrimination at work and at school but not elsewhere. 
+If you just summed the number of contexts, you would be losing that information. 
+
+So you want a variable that captures what *pattern* of experience each participant has had. 
+Let's make it! :)
+We'll do this by literally squishing the three yes-no variables together, with the `unite()` function from tidyr.
+First I'll recode the 0-1 variables with character levels, so they will still make sense when we combine them.
+This code uses the `ifelse()` function, which is a handy way to transform variables. 
+Read its help documentation if you haven't used it before (`?ifelse`).
+
+```{r ifelse}
+# make a new variable that codes for pattern of experience in one factor
+data$dis_work_ch <- ifelse(data$dis_work == 1, "work", "") # I'm using _ch to stand for "character"
+View(data) # take a look at the new variable
+# do the other two 
+data$dis_school_ch <- ifelse(data$dis_school == 1, "school", "") 
+data$dis_comm_ch <- ifelse(data$dis_comm == 1, "comm", "") 
+View(data)
+```
+
+Now we'll use `unite()` to take those three variables and squish them together into one variable.
+By default, `remove = TRUE`, which means it will delete the three variables we're uniting and only keep the final combined one. 
+If you'd prefer to keep the original variables in your dataframe and just add the new united one, add `remove = FALSE` to the `unite()` command.
+
+```{r unite}
+library(tidyr) # you'll need to activate this package, if you don't have it loaded already (but you shouldn't need to install it again)
+data <- unite(data, col=dis_type, dis_work_ch:dis_comm_ch, sep="") # the colon here means "from dis_work_ch to dis_comm_ch", so it includes dis_school_ch as well, since that's in between them
+head(data)
+# let's see what kind the variables are
+str(data)
+data$trauma_type <- as.factor(data$trauma_type) # make it a factor
+levels(data$trauma_type)
+```
+
+Hooray! 
+Of course, the levels for this factor are kinda ugly. 
+You can fix that by renaming the fatcor levels with `factor()`.
