@@ -1,0 +1,171 @@
+# Plotting the results of your logistic regression Part 3: 3-way interactions
+If you can interpret a 3-way interaction without plotting it, go find a mirror and give yourself a big sexy wink. 
+![wink](wink.jpeg)
+That's impressive.
+
+For the rest of us, looking at plots will make understanding the model and results *so* much easier. 
+And even if you are one of those lucky analysts with the working memory capacity of a super computer, you may want this code so you can use plots to help communicate a 3-way interaction to your readers. 
+
+Use the model from [the Part 1 code](https://github.com/rosemm/rexamples/blob/master/logistic_regression_plotting_part1.Rmd).
+```{r last_time, echo=FALSE}
+set.seed(24601) # setting this so the random results will be repeatable 
+
+library(MASS)
+covmat <- matrix(c(1.0,   0.2,   0.6, 
+                   0.2,   1.0,  -0.5, 
+                   0.6,  -0.5,   1.0), nrow=3) # the true cov matrix for my data
+data <- mvrnorm(300, mu=c(0,0,0), Sigma=covmat) # generate random data that match that cov matrix
+colnames(data) <- c("X1", "X2", "DV")
+data <- as.data.frame(data)
+data$group <- gl(n=3, k=ceiling(nrow(data)/3), labels=c("a", "b", "c"))
+# add some group differences and interaction stuff...
+data$DV <- with(data, ifelse(group=="c" & X1 > 0, DV+rnorm(n=1, mean=1), 
+                             ifelse(group=="b" & X1 > 0, DV+rnorm(n=1, mean=2) , DV)))
+# make DV binary
+data$DV <- ifelse(data$DV > 0, 1, 0)
+
+# note this use of exponent in a formula will give us all 2-way interactions
+model <- glm(DV ~ (X1 + X2 + group)^2, 
+             data=data, na.action="na.exclude",  family="binomial") 
+             
+# save the coefficient values so we can use them in the equations
+b0 <- model$coef[1] # intercept
+X1 <- model$coef[2]
+X2 <- -model$coef[3]
+groupb <- model$coef[4]
+groupc <- model$coef[5]
+X1.X2 <- model$coef[6]
+X1.groupb <- model$coef[7]
+X1.groupc <- model$coef[8]
+X2.groupb <- model$coef[9]
+X2.groupc <- model$coef[10]
+```
+
+Here's that model:
+
+```{r model}
+summary(model)
+```
+
+Let's add a 3-way interaction. 
+Instead of re-running the whole model, we can use the nifty update() function. 
+This will make the change to the model (adding the 3-way interaction), and automatically refit the whole thing.
+(It is also fine to just re-run the model --- you'll get the exact same results. I just wanted to show off the update() function.)
+```{r model_update}
+new.model <- update(model, ~ . + X1:X2:group) # the . stands in for the whole formula we had before
+
+# if you wanted to specify the whole model from scratch instead of using update():
+new.model <- glm(DV ~ X1*X2*group, 
+             data=data, na.action="na.exclude",  family="binomial")  
+
+summary(new.model)
+```
+
+## Calculate probabilities for the plot
+Again, we'll put X1 on the x-axis. That's the only variable we'll enter as a whole range.
+```{r x_axis_var}
+X1_range <- seq(from=min(data$X1), to=max(data$X1), by=.01)
+```
+
+Next, compute the equations for each line in logit terms.
+
+### Pick some representative values for the other continuous variable 
+Just like last time, we'll plug in some representative values for X2, so we can have separate lines for each representative level of X2. 
+
+```{r X2_values}
+X2_l <- mean(data$X2) - sd(data$X2) 
+X2_m <- mean(data$X2)
+X2_h <- mean(data$X2) + sd(data$X2)
+# check that your representative values actually fall within the observed range for that variable
+summary(data$X2)
+c(X2_l, X2_m, X2_h)
+```
+
+Now we can go ahead and plug those values into the rest of the equation to get the expected logits across the range of X1 for each of our "groups" (hypothetical low X2 people, hypothetical average X2 people, hypothetical high X2 people).
+We'll also plug in the dummy codes for each of the three groups (a, b, and c).
+And we'll calculate the predicted probabilities of the DV for each combination of X2 level and group.
+
+But instead of literally writing out all of the equations (9 of them!!), we'll just use the fun-and-easy predict() function.
+
+If you ran your model in SPSS, so you only have the coefficients and not the whole model as an R object, you can still make the plots --- you just need to spend some quality time writing out those equations. 
+For examples of how to do this (for just 3 equations, but you get the idea) see [Part 1](https://github.com/rosemm/rexamples/blob/master/logistic_regression_plotting_part1.Rmd) and [Part 2](https://github.com/rosemm/rexamples/blob/master/logistic_regression_plotting_part2.Rmd) in this series. 
+
+To use predict(), you make a new data frame with the predictor values you want to use (i.e. the whole range for X1, group a, and the representative values we picked for X2), 
+and then when you run predict() on it, for each row in the data frame it will generate the predicted value for your DV from the model you saved.
+The expand.grid() function is a quick and easy way to make a data frame out of all possible combinations of the variables provided. Perfect for this situation!
+
+```{r predict_probs}
+#make a new data frame with the X values you want to predict 
+generated_data <- as.data.frame(expand.grid(X1=X1_range, X2=c(X2_l, X2_m, X2_h), group=c("a", "b", "c") ))
+head(generated_data)
+
+#use `predict` to get the probability using type='response' rather than 'link' 
+generated_data$prob <- predict(new.model, newdata=generated_data, type = 'response')
+head(generated_data) 
+
+# let's make a factor version of X2, so we can do gorgeous plotting stuff with it later :)
+generated_data$X2_level <- factor(generated_data$X2, labels=c("low (-1SD)", "mean", "high (+1SD)"), ordered=T)
+summary(generated_data)
+```
+
+
+## Plot time! 
+This kind of situation is exactly when ggplot2 really shines. 
+We want multiple plots, with multiple lines on each plot. 
+Of course, this is totally possible in base R (see [Part 1](https://github.com/rosemm/rexamples/blob/master/logistic_regression_plotting_part1.Rmd) and [Part 2](https://github.com/rosemm/rexamples/blob/master/logistic_regression_plotting_part2.Rmd) for examples), but it is *so much easier* in ggplot2. 
+To do this in base R, you would need to generate a plot with one line (e.g. group a, low X2), then add the additional lines one at a time (group a, mean X2; group a, high X2), then generate a new plot (group b, low X2), then add two more lines, then generate a new plot, then add two more lines. Sigh.
+
+Not to go down too much of a rabbit hole, but this illustrates what is (in my opinion) the main difference between base R graphics and ggplot2: base graphics are built for drawing, whereas ggplot is built for visualizing data.
+It's the difference between specifying each line and drawing them on your plot vs. giving a whole data frame to the plotting function and telling it which variables to use and how.
+Depending on your needs and preferences, base graphics or ggplot may be a better choice for you. 
+For plotting complex model output, like a 3-way interaction, I think you'll generally find that ggplot2 saves the day.
+
+```{r ggplot2}
+library(ggplot2)
+
+plot.data <- generated_data
+
+# check out your plotting data
+head(plot.data)
+
+ggplot(plot.data, aes(x=X1, y=prob, color=X2_level)) + 
+  geom_line(lwd=2) + 
+  labs(x="X1", y="P(outcome)", title="Probability of super important outcome") +
+  facet_wrap(~group) # i love facet_wrap()! it's so great. you should fall in love, too, and use it all the time.
+
+# let's try flipping it, so the facets are by X2 level and the lines are by group
+ggplot(plot.data, aes(x=X1, y=prob, color=group)) + 
+  geom_line(lwd=2) + 
+  labs(x="X1", y="P(outcome)", title="Probability of super important outcome") +
+  facet_wrap(~X2_level) 
+
+# want it all on one plot? you can set the color to the interaction of group and X2_level:
+ggplot(plot.data, aes(x=X1, y=prob, color=group:X2_level)) + 
+  geom_line(lwd=2) + 
+  labs(x="X1", y="P(outcome)", title="Probability of super important outcome")
+```
+
+For something like this, you may want to manually specify the colors, to make the plot easier to read.
+For more details about manually setting colors in ggplot2, see [this R Club post](http://blogs.uoregon.edu/rclub/2015/02/17/picking-pretty-plot-palates/).
+
+```{r ggplot2_manual_colors}
+library(RColorBrewer)
+# pick some nice colors. I want all shades of red for a, green for b, and blue for c.
+a_colors <- brewer.pal(9,"Reds")[c(4,6,9)] # I'm getting all 9 shades and just picking the 3 I want to use 
+b_colors <- brewer.pal(9,"Greens")[c(4,6,9)]
+c_colors <- brewer.pal(9,"Blues")[c(4,6,9)] 
+colors <- c(a_colors, b_colors, c_colors)
+colors # this is how R saves color values
+
+ggplot(plot.data, aes(x=X1, y=prob, color=group:X2_level)) + 
+  geom_line(lwd=2) + 
+  labs(x="X1", y="P(outcome)", title="Probability of super important outcome") +
+  scale_color_manual(values=colors) 
+
+# you can also change the line type based on a factor
+ggplot(plot.data, aes(x=X1, y=prob, color=group:X2_level)) + 
+  geom_line(aes(linetype=X2_level), lwd=2) + # because linetype is instead aes(), it can vary according to the data (i.e. by X2_level)
+  labs(x="X1", y="P(outcome)", title="Probability of super important outcome") +
+  scale_color_manual(values=colors) 
+```
+

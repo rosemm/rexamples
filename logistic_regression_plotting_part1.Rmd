@@ -1,0 +1,182 @@
+# Plotting the results of your logistic regression Part 1: Continuous by categorical interaction
+We'll run a nice, complicated logistic regresison and then make a plot that highlights a continuous by categorical interaction.
+
+```{r generate_fake_data}
+set.seed(24601) # setting this so the random results will be repeatable 
+
+library(MASS)
+covmat <- matrix(c(1.0,   0.2,   0.6, 
+                   0.2,   1.0,  -0.5, 
+                   0.6,  -0.5,   1.0), nrow=3) # the true cov matrix for my data
+data <- mvrnorm(300, mu=c(0,0,0), Sigma=covmat) # generate random data that match that cov matrix
+colnames(data) <- c("X1", "X2", "DV")
+data <- as.data.frame(data)
+data$group <- gl(n=3, k=ceiling(nrow(data)/3), labels=c("a", "b", "c", "d"))
+# add some group differences and interaction stuff...
+data$DV <- with(data, ifelse(group=="c" & X1 > 0, DV+rnorm(n=1, mean=1), 
+                             ifelse(group=="b" & X1 > 0, DV+rnorm(n=1, mean=2) , DV)))
+# make DV binary
+data$DV <- ifelse(data$DV > 0, 1, 0)
+head(data)
+```
+
+## Get the coefficients from your logistic regression model
+First, whenever you're using a categorical predictor in a model in R (or anywhere else, for that matter), make sure you know how it's being coded!! For this example, we want it dummy coded (so we can easily plug in 0's and 1's to get equations for the different groups). This is called contr.treatment() in R. 
+```{r check_factor_contrasts}
+contrasts(data$group)
+# Great, that's what we wanted. And we can see that a is the reference group.
+# If you want to change what contrasts will run, you can add an argument to the glm() call. For example contrasts="contr.treatment" will make it traditional dummy coding if it isn't already.
+```
+
+Now we can run that model.
+
+```{r model}
+# note this use of exponent in a formula will give us all 2-way interactions
+model <- glm(DV ~ (X1 + X2 + group)^2, 
+             data=data, na.action="na.exclude",  family="binomial") 
+             
+summary(model)
+model$coef
+# save the coefficient values so we can use them in the equations
+b0 <- model$coef[1] # intercept
+X1 <- model$coef[2]
+X2 <- -model$coef[3]
+groupb <- model$coef[4]
+groupc <- model$coef[5]
+X1.X2 <- model$coef[6]
+X1.groupb <- model$coef[7]
+X1.groupc <- model$coef[8]
+X2.groupb <- model$coef[9]
+X2.groupc <- model$coef[10]
+```
+
+Note: If you were working in SPSS (or for some other reason you have run a model but can't generate a plot for it), you can enter in your coefficients by just typing in the numbers, like this:
+```{r, eval=FALSE}
+b0 <- -0.5872841 # intercept
+X1 <- 2.6508212
+X2 <- -2.2599250
+groupb <- 2.2110951
+groupc <- 0.6649971
+X1.X2 <- 0.1201166
+X1.groupb <- 2.7323113
+X1.groupc <- -0.6816327
+X2.groupb <- 0.8476695
+X2.groupc <- 0.4682893
+```
+
+## Calculate probabilities for the plot
+First, decide what variable you want on your x-axis. That's the only variable we'll enter as a whole range. (The range we set here will determine the range on the x-axis of the final plot, by the way.)
+```{r x_axis_var}
+X1_range <- seq(from=min(data$X1), to=max(data$X1), by=.01)
+```
+Next, compute the equations for each group in logit terms. These equations need to include every coefficient for the model you ran. You'll need to plug in values for all but one variable -- whichever variable you decided will be displayed on the x-axis of your plot. You make a separate equation for each group by plugging in different values for the group dummy codes.
+```{r prob_eqns}
+X2_val <- mean(data$X2) # by plugging in the mean as the value for X2, I'll be generating plots that show the relationship between X1 and the outcome "for someone with an average X2".
+
+a_logits <- b0 + 
+  X1*X1_range + 
+  X2*X2_val + 
+  groupb*0 + 
+  groupc*0 + 
+  X1.X2*X1_range*X2_val + 
+  X1.groupb*X1_range*0 + 
+  X1.groupc*X1_range*0 + 
+  X2.groupb*X2_val*0 + 
+  X2.groupc*X2_val*0 # the reference group
+
+b_logits <- b0 + 
+  X1*X1_range + 
+  X2*X2_val + 
+  groupb*1 + 
+  groupc*0 + 
+  X1.X2*X1_range*X2_val + 
+  X1.groupb*X1_range*1 + 
+  X1.groupc*X1_range*0 + 
+  X2.groupb*X2_val*1 + 
+  X2.groupc*X2_val*0
+
+c_logits <- b0 + 
+  X1*X1_range + 
+  X2*X2_val + 
+  groupb*0 + 
+  groupc*1 + 
+  X1.X2*X1_range*X2_val + 
+  X1.groupb*X1_range*0 + 
+  X1.groupc*X1_range*1 + 
+  X2.groupb*X2_val*0 + 
+  X2.groupc*X2_val*1
+
+# Compute the probibilities (this is what will actually get plotted):
+a_probs <- exp(a_logits)/(1 + exp(a_logits))
+b_probs <- exp(b_logits)/(1 + exp(b_logits))
+c_probs <- exp(c_logits)/(1 + exp(c_logits))
+```
+
+## Plot time!
+```{r plot}
+# We'll start by plotting the ref group:
+plot(X1_range, a_probs, 
+     ylim=c(0,1),
+     type="l", 
+     lwd=3, 
+     lty=2, 
+     col="gold", 
+     xlab="X1", ylab="P(outcome)", main="Probability of super important outcome")
+
+
+# Add the line for people who are in the b group
+lines(X1_range, b_probs, 
+      type="l", 
+      lwd=3, 
+      lty=3, 
+      col="turquoise2")
+
+# Add the line for people who are in the c group
+lines(X1_range, c_probs, 
+      type="l", 
+      lwd=3, 
+      lty=4, 
+      col="orangered")
+
+# add a horizontal line at p=.5
+abline(h=.5, lty=2)
+```
+
+Or, you can do it in ggplot2!
+
+```{r ggplot2}
+library(ggplot2); library(tidyr)
+# first you have to get the information into a long dataframe, which is what ggplot likes :)
+plot.data <- data.frame(a=a_probs, b=b_probs, c=c_probs, X1=X1_range)
+plot.data <- gather(plot.data, key=group, value=prob, a:c)
+head(plot.data)
+
+ggplot(plot.data, aes(x=X1, y=prob, color=group)) + # asking it to set the color by the variable "group" is what makes it draw three different lines
+  geom_line(lwd=2) + 
+  labs(x="X1", y="P(outcome)", title="Probability of super important outcome") 
+```
+
+## Using `predict` to get expected values
+
+The `predict` function in R is really useful. You can give it any model, and any new
+data set with columns the have the same names as your predictor variables, and it
+will return to you the predicted value for your dependent variable. This is nice because
+you don't have to compute this yourself, and in the case of logistic regression this means it
+can automatically give you predicted DV values on on the original response scale -- that is, 
+as a probability, rather than a logit.
+
+```{r predict}
+#make a new data frame with the X values you want to predict
+X1_range_data <- as.data.frame(expand.grid(X1=X1_range, X2=X2_val, group=c('a', 'b', 'c')))
+head(X1_range_data) 
+
+#use `predict` to get the probability using type='response' rather than 'link' 
+X1_range_data$prob <- predict(model, newdata=X1_range_data, type = 'response')
+head(X1_range_data) 
+
+#same plot as above:
+ggplot(X1_range_data, aes(x=X1, y=prob, color=group))+
+  geom_line(lwd=2) + 
+  labs(x="X1", y="P(outcome)", title="Probability of super important outcome") 
+```
+
