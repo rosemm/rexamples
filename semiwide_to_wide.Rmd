@@ -1,0 +1,32 @@
+Here's the whole thing:
+```{r}
+data <- data.frame(subj=sort(c(1:10, 1:10)), cond=rep(c("pre", "post"), 10), DV=rnorm(20), video=rnorm(20), dyadvar1=sort(c(1:10, 1:10)), dyadvar2=sort(c(1:10, 1:10)))
+
+data
+
+library(tidyr); library(dplyr)
+wide.data <- data %>%
+  gather(key="measure", value="value", DV:video) %>%
+  unite(col=key, cond, measure)  %>%
+  spread(key=key, value=value)
+```
+
+Here's each step:
+```{r}
+library(knitr)
+data %>%
+  gather(key="measure", value="value", DV:video)
+```
+
+```{r}
+data %>%
+  gather(key="measure", value="value", DV:video) %>%
+  unite(col=key, cond, measure)
+```
+
+```{r}
+data %>%
+  gather(key="measure", value="value", DV:video) %>%
+  unite(col=key, cond, measure)  %>%
+  spread(key=key, value=value)
+```
