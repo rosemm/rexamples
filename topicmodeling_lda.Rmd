@@ -1,0 +1,5 @@
+[lda R package](http://cran.r-project.org/web/packages/lda/lda.pdf)
+```{r}
+
+```
+
