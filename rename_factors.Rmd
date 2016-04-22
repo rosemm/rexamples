@@ -1,0 +1,106 @@
+---
+title: "working with factors"
+author: "Rose Maier"
+date: "April 21, 2016"
+output: html_document
+---
+
+In this example, we'll rename and change the order of the levels of a factor.
+You'll like knowing how to do this if a) you are frustrated by weird or yucky factor levels in your output from models or plots or b) you're a general neat freak.
+
+## Example 1: Renaming factor levels 
+
+To start, let's continue our [example where we combined several binary variables into one factor](https://github.com/rosemm/rexamples/blob/master/make_new_combined_factor.Rmd).
+I'll keep using that dataset, so to follow along run that code first and then come back here. :)
+
+First, let's just take a peak at that combined factor variable. 
+Running `summary()` on a factor will tell you how many cases you have at each level.
+
+```{r data}
+library(devtools)
+source_url("http://raw.githubusercontent.com/rosemm/rexamples/master/admin_functions.R") # i have some special functions stored here, including source_rmd_url(), which we need now
+
+library(knitr)
+source_rmd_url("http://raw.githubusercontent.com/rosemm/rexamples/master/make_new_combined_factor.Rmd") # this runs the code from the .rmd file listed, regenerating the data
+
+summary(data$dis_type)
+```
+
+Oh, but those level names are awful!
+They make sense, sort of, but it would be so much nicer if the level for people who experienced all three types of disrcimination was "all three" instead of "workschoolcomm", and the level for people who reported experiencing no discrimination should be "none" instead of just blank.
+Having weird or bad factor levels will come back to bite you when you plot or run models:
+
+```{r sad_plot}
+library(ggplot2)
+ggplot(data, aes(x=dis_type)) +
+  geom_bar() 
+```
+
+There are a bunch of ways to rename factors in R (of course! There's a million ways to do pretty much everything...), but let's look at the `factor()` command itself, since it's pretty darn useful.
+
+```{r rename_factor}
+levels(data$dis_type) # prints the levels of the factor, in order.
+data$dis_type <- factor(data$dis_type, 
+                        levels = c("", "comm", "school", "schoolcomm", "work", "workcomm", "workschool", "workschoolcomm"),
+                        labels = c(c("none", "comm", "school", "school and comm", "work", "work and comm", "work and school", "all three")))
+levels(data$dis_type) # see what they are now
+```
+
+That's better! 
+
+```{r happy_plot}
+ggplot(data, aes(x=dis_type)) +
+  geom_bar() +
+  labs(title="Number of participants who experienced discrimination\n at work, school, and in the community", x=NULL) + # remove the x-axis name, and give it a nice informative title
+  theme(axis.text.x = element_text(angle=330, vjust=1, hjust=0)) # this tilts my lovely new axis labels, so we can read them all
+```
+
+## Example 2: Reordering factor levels 
+Here's another super common example: Lickert scales. 
+When R reads in a new dataframe, it automatically assumes you want your factor levels ordered alphabetically, and it will display them that way in plots.
+This is a pain in the tuchus if you have factor levels like "low", "med", "high", which it very helpfully sorts alphabetically and displays as "high", "low", "med". Facepalm.
+
+Psychologists love nothing better than asking people to report on their personality, behavior, thoughts, emotions, whims, fancies, and foibles by indicating the extent to which they agree or disagree with a list of statements. 
+This results in datasets with lots of Lickert scale variables. 
+Now, whenever you read in a dataset with Lickert scale variables, you'll be able to tidy them up so they display the way you want them to. 
+
+Let's read in a dataset I made that has some Lickert variables in it.
+ 
+```{r Lickert_data}
+library(devtools)
+source_url("http://raw.githubusercontent.com/rosemm/rexamples/master/generating_data.R") # this runs the script, which makes some data for us
+
+# check out the order it's displaying the factor levels in
+summary(Lickert.data)
+ggplot(Lickert.data, aes(x=resp1)) +
+  geom_bar() + 
+  labs(x=NULL, title="Sigh...")
+```
+
+
+
+```{r relevel_factor_one}
+Lickert.data$resp1 <- factor(Lickert.data$resp1 , levels=c("Strongly disagree", "Disagree", "Neither", "Agree", "Strongly Agree"))
+
+levels(Lickert.data$resp1)  # yay! 
+
+str(Lickert.data ) # you can see the order of the levels is fixed for resp1
+```
+
+But there's often lots of variables with the same problematic Lickert scales.
+Can we do them all in one fell swoop?
+
+```{r relevel_factor_all}
+Lickert.data <- gather(Lickert.data, key="question", value="response", resp1:resp5) # transform to long format, gathering resp1 through resp5
+head(Lickert.data)
+
+Lickert.data$response <- factor(Lickert.data$response, levels=c("Strongly disagree", "Disagree", "Neither", "Agree", "Strongly Agree"))
+
+Lickert.data <- spread(Lickert.data, question, response) # return it to wide format by spreading the question variable out as column names
+
+levels(Lickert.data$resp1) # yay!
+
+ggplot(Lickert.data, aes(x=resp1)) +
+  geom_bar() + 
+  labs(x=NULL, title="That's more like it!")
+```
