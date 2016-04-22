@@ -52,4 +52,4 @@ levels(data$dis_type)
 
 Hooray! 
 Of course, the levels for this factor are kinda ugly. 
-You can fix that by renaming the fatcor levels with `factor()`.
+You can fix that by [renaming the fatcor levels](https://github.com/rosemm/rexamples/blob/master/rename_factors.Rmd) with `factor()`.
