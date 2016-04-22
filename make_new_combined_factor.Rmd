@@ -1,13 +1,13 @@
 In this example, we'll take a set of yes-no variables and combine them all into one factor that codes for the pattern of results for each case. 
-For example, let's say you collected data from 20 participants asking them about whether or not they've experienced discrimination in a few different contexts: at work, at school, and in the community in general. 
+For example, let's say you collected data from 50 participants asking them about whether or not they've experienced discrimination in a few different contexts: at work, at school, and in the community in general. 
 Your participants indicated yes or no as to whether they'd experienced discrimination in each context.
 Here's some made-up data:
 
 ```{r generate_data}
 # make a toy data frame that has some 0-and-1 variables, for the different trauma types
-data <- data.frame(dis_work=sample(c(0,1), size=20, replace=T), 
-                   dis_school=sample(c(0,1), size=20, replace=T),
-                   dis_comm=sample(c(0,1), size=20, replace=T))
+data <- data.frame(dis_work=sample(c(0,1), size=50, replace=T), 
+                   dis_school=sample(c(0,1), size=50, replace=T),
+                   dis_comm=sample(c(0,1), size=50, replace=T))
 # take a look at that data frame:
 head(data)
 ```
@@ -29,11 +29,11 @@ Read its help documentation if you haven't used it before (`?ifelse`).
 ```{r ifelse}
 # make a new variable that codes for pattern of experience in one factor
 data$dis_work_ch <- ifelse(data$dis_work == 1, "work", "") # I'm using _ch to stand for "character"
-View(data) # take a look at the new variable
+head(data) # take a look at the new variable
 # do the other two 
 data$dis_school_ch <- ifelse(data$dis_school == 1, "school", "") 
 data$dis_comm_ch <- ifelse(data$dis_comm == 1, "comm", "") 
-View(data)
+head(data)
 ```
 
 Now we'll use `unite()` to take those three variables and squish them together into one variable.
@@ -46,8 +46,8 @@ data <- unite(data, col=dis_type, dis_work_ch:dis_comm_ch, sep="") # the colon h
 head(data)
 # let's see what kind the variables are
 str(data)
-data$trauma_type <- as.factor(data$trauma_type) # make it a factor
-levels(data$trauma_type)
+data$dis_type <- as.factor(data$dis_type) # make it a factor
+levels(data$dis_type)
 ```
 
 Hooray! 
