@@ -1,10 +1,3 @@
----
-title: "working with factors"
-author: "Rose Maier"
-date: "April 21, 2016"
-output: html_document
----
-
 In this example, we'll rename and change the order of the levels of a factor.
 You'll like knowing how to do this if a) you are frustrated by weird or yucky factor levels in your output from models or plots or b) you're a general neat freak.
 
