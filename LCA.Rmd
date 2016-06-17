@@ -1,0 +1,185 @@
+---
+title: "LCA"
+author: "Rose Maier"
+date: "June 5, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Some general resources:    
+[http://www.ats.ucla.edu/stat/mplus/seminars/lca](http://www.ats.ucla.edu/stat/mplus/seminars/lca)     
+[http://www.john-uebersax.com/stat/faq.htm](http://www.john-uebersax.com/stat/faq.htm)
+An excellent chapter explaining LCA (categorical indicators) and LPA (continuous indicators): [http://daob.nl/wp-content/uploads/2015/06/oberski-LCA.pdf](http://daob.nl/wp-content/uploads/2015/06/oberski-LCA.pdf)          
+[http://stats.stackexchange.com/questions/122213/latent-class-analysis-vs-cluster-analysis-differences-in-inferences](http://stats.stackexchange.com/questions/122213/latent-class-analysis-vs-cluster-analysis-differences-in-inferences)     
+
+
+Includes an example (in mplus) of a model with both continuous and categorical indicators:
+[http://www.ats.ucla.edu/stat/mplus/seminars/introMplus_part2/lca.htm](http://www.ats.ucla.edu/stat/mplus/seminars/introMplus_part2/lca.htm)     
+...translating it to r:
+[http://stats.stackexchange.com/questions/47426/latent-class-model-with-both-continuous-and-categorical-indicators-in-r](http://stats.stackexchange.com/questions/47426/latent-class-model-with-both-continuous-and-categorical-indicators-in-r)     
+The r package being used:
+[https://cran.r-project.org/web/packages/depmixS4/vignettes/depmixS4.pdf](https://cran.r-project.org/web/packages/depmixS4/vignettes/depmixS4.pdf)     
+
+Some packages I'm not using:
+
+```{r other_options, eval=FALSE}
+library(mclust)
+library(poLCA) # only categorical indicators
+library(nlsem)
+```
+
+
+From [IDRE (example 2 is most relevant)](http://www.ats.ucla.edu/stat/mplus/seminars/introMplus_part2/lca.htm):     
+The examples on this page use a dataset with information on high school students' academic histories.  In the first example below, a 2 class model is estimated using four dichotomous variables as indicators (category 1 = no, category 2 = yes). The variables are whether the student had taken honors math (hm), honors English (he), or vocational classes (voc); and whether the student reported they were unlikely to go to college (nocol). The expected classes are academically oriented students (i.e. students who took honors classes, did not take vocational classes and reported they were likely to go to college), and students who are less academically oriented. The dataset for this example is [lca.dat](http://www.ats.ucla.edu/stat/mplus/seminars/introMplus_part2/lca.dat).   
+...    
+Above we estimated a specific case of a mixture model, a latent class analysis, in which all of the indicators are categorical, in this example the model contains both categorical and continuous indicators. In addition to the four categorical variables used in the example above, this model includes four continuous variables, the students score on a measure of academic achievement for each of the four years of high school (ach9-ach12). The achievement variables have been centered so that each has a mean of zero.
+
+```{r}
+library(depmixS4)
+```
+
+
+```{r idre_data}
+lca <- read.table("http://www.ats.ucla.edu/stat/mplus/seminars/introMplus_part2/lca.dat", sep=",")
+names(lca) <- c( "hm", "he", "voc", "nocol" ,"ach9", "ach10", "ach11","ach12")
+
+summary(lca)
+```
+
+## Example 1: Only categorical indicators
+
+```{r idre_example1}
+mod1 <- mix(list(hm~1, he~1, voc~1, nocol~1), 
+           data=lca, # the dataset to use
+           nstates=2, # the number of latent classes
+           family=list(multinomial("identity"), multinomial("identity"), multinomial("identity"), multinomial("identity")),
+           respstart=runif(16))
+
+fmod1 <- fit(mod1, verbose=FALSE)
+
+fmod1 
+summary(fmod1)
+```
+
+For binary indicators, the first parameter for each response varilable (e.g. Re1.1), gives the probability of level 1 for that variable in latent state 1 and latent state 2. The second parameter (e.g. Re1.2) gives the probability of level 2 for that variable in each latent state --- so the two parameters for a response variable should sum to 1 for each state.
+```{r idre_example1_saving_class_assignments}
+posterior.states <- depmixS4::posterior(fmod1) # Saving Class Assignments
+head(round(posterior.states, 3)) # show the first 6 cases, rounded to 3 decimal places to match IDRE output
+
+posterior.states$state <- as.factor(posterior.states$state)
+summary(posterior.states$state) # how many people in each latent class?
+```
+
+```{r}
+fmod1@npars
+```
+Note about npars: The total number of parameters of the model. This is not the degrees of freedom, ie there are redundancies in the parameters, in particular in the multinomial models for the transitions and prior.    
+
+
+Starting values: "instart for the parameters relating to the prior probabilities, trstart, relating the transition models, and respstart for the parameters of the response models. Note that the starting values for the initial and transition models as well as multinomial logit response models are interpreted as probabilities, and internally converted to multinomial logit parameters (if a logit link function is used)."     
+
+## Example 2: Both categorical and continuous indicators
+
+```{r idre_example2}
+
+mod2 <- mix(list(hm~1, he~1, voc~1, nocol~1, ach9~1, ach10~1, ach11~1, ach12~1), 
+           data=lca, # the dataset to use
+           nstates=2, # the number of latent classes
+           family=list(multinomial(),multinomial(),multinomial(),multinomial(), gaussian(),gaussian(),gaussian(),gaussian()),
+           respstart=runif(32))
+
+fmod2 <- fit(mod2, verbose=FALSE)
+
+fmod2
+summary(fmod2)
+posterior.states <- depmixS4::posterior(fmod2)
+posterior.states$state <- as.factor(posterior.states$state)
+```
+
+Plotting, to understand the latent classes
+```{r plotting1}
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+plot.data <- cbind(lca, posterior.states) %>% 
+  gather(key="measure", value="value", hm:ach12)
+
+plot.data$var_type <- ifelse(plot.data$measure == "hm" | 
+                               plot.data$measure == "he" | 
+                               plot.data$measure == "voc" | 
+                               plot.data$measure == "nocol", "categorical", 
+                             ifelse(grepl(pattern="ach", x=plot.data$measure), "continuous", NA))
+
+ggplot(filter(plot.data, var_type=="continuous"), aes(y=value, x=state)) + 
+  geom_boxplot() + 
+  facet_wrap(~ measure)
+
+ggplot(filter(plot.data, var_type=="categorical"), aes(x=state, fill=as.factor(value))) + 
+  geom_bar() + 
+  facet_wrap(~ measure) +
+  ggtitle("displayed as counts")
+
+ggplot(filter(plot.data, var_type=="categorical"), aes(x=state, fill=as.factor(value))) + 
+  geom_bar(position="fill") + 
+  facet_wrap(~ measure) +
+  ggtitle("displayed as proportion")
+
+summary.plot.data <- plot.data %>% 
+  group_by(state, measure) %>% 
+  summarize(z=mean(value)/sd(value))
+
+ggplot(summary.plot.data, aes(y=z, x=measure, group=state, color=state)) + 
+  geom_point() + 
+  geom_line() + 
+  ggtitle("typical LCA plot")
+```
+
+## Example 3: Using a predictor for class (a prior)
+
+```{r balance_example}
+data("balance")
+head(balance)
+balance$age_c <- balance$agedays - mean(balance$agedays, na.rm=TRUE) #centering age
+
+
+mod3 <- mix(list(d1 ~ 1, d2 ~ 1, d3 ~ 1, d4 ~ 1), 
+            prior = ~ age_c, # a predictor for class membership (probability of being in each class depends on age)
+            data=balance,
+            nstates = 3, 
+            family = list(multinomial("identity"), multinomial("identity"), multinomial("identity"), multinomial("identity")), 
+            respstart = runif(24))
+
+fmod3 <- fit(mod3, verbose=FALSE)
+
+fmod3
+summary(fmod3)
+summary(fmod3, which="response")
+posterior.states <- depmixS4::posterior(fmod3) # Returns a data.frame with the number of latent states + 1 columns; the first column has the viterbi states, the other columns have the delta probabilities, see Rabiner (1989)
+posterior.states$state <- as.factor(posterior.states$state)
+```
+
+```{r plots}
+balance <- cbind(balance, posterior.states)
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+ggplot(tidyr::gather(balance, key="key", value="value", S1:S3), aes(x=agedays, y=value, color=key)) + 
+  geom_point(alpha=.6) + 
+  ggtitle("estimated probability of membership in each class by age")
+
+probs <- balance %>% 
+  group_by(age) %>% 
+  summarize_each(funs(mean), S1, S2, S3)
+  
+ggplot(tidyr::gather(probs, key="key", value="value", -age), aes(y=value, x=age, color=key)) + 
+  geom_line() + 
+  ggtitle("mean probability of being in each class by age")
+```
+
+
+"The intercept values of the multinomial logistic parameters provide the prior probabilities of each class when the covariate has value zero (note that in this case the value zero does not have much significance, scaling and/or centering of covariates may be useful in such cases). The summary function prints these values. As can be seen from those values, at age zero, the prior probability is overwhelmingly at the second class."     
+
