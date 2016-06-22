@@ -107,6 +107,14 @@ library(dplyr)
 plot.data <- cbind(lca, posterior.states) %>% 
   gather(key="measure", value="value", hm:ach12)
 
+max_lca_probs <- cbind(lca, posterior.states) %>% 
+  mutate(id=1:nrow(.)) %>% 
+  gather("state_prob", "value", starts_with("S", ignore.case=FALSE)) %>% 
+  group_by(id) %>% 
+  summarize(max_prob=max(value))
+
+summary(max_lca_probs)  # with what probability are cases assigned to classes?
+
 plot.data$var_type <- ifelse(plot.data$measure == "hm" | 
                                plot.data$measure == "he" | 
                                plot.data$measure == "voc" | 
