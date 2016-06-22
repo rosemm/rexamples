@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 ```
 
 Some general resources:    
@@ -35,7 +35,7 @@ library(nlsem)
 From [IDRE (example 2 is most relevant)](http://www.ats.ucla.edu/stat/mplus/seminars/introMplus_part2/lca.htm):     
 The examples on this page use a dataset with information on high school students' academic histories.  In the first example below, a 2 class model is estimated using four dichotomous variables as indicators (category 1 = no, category 2 = yes). The variables are whether the student had taken honors math (hm), honors English (he), or vocational classes (voc); and whether the student reported they were unlikely to go to college (nocol). The expected classes are academically oriented students (i.e. students who took honors classes, did not take vocational classes and reported they were likely to go to college), and students who are less academically oriented. The dataset for this example is [lca.dat](http://www.ats.ucla.edu/stat/mplus/seminars/introMplus_part2/lca.dat).   
 ...    
-Above we estimated a specific case of a mixture model, a latent class analysis, in which all of the indicators are categorical, in this example the model contains both categorical and continuous indicators. In addition to the four categorical variables used in the example above, this model includes four continuous variables, the students score on a measure of academic achievement for each of the four years of high school (ach9-ach12). The achievement variables have been centered so that each has a mean of zero.
+Above we estimated a specific case of a mixture model, a latent class analysis, in which all of the indicators are categorical, in this example the model contains both categorical and continuous indicators. In addition to the four categorical variables used in the example above, this model includes four continuous variables, the students score on a measure of academic achievement for each of the four years of high school (ach09-ach12). The achievement variables have been centered so that each has a mean of zero.
 
 ```{r}
 library(depmixS4)
@@ -44,7 +44,7 @@ library(depmixS4)
 
 ```{r idre_data}
 lca <- read.table("http://www.ats.ucla.edu/stat/mplus/seminars/introMplus_part2/lca.dat", sep=",")
-names(lca) <- c( "hm", "he", "voc", "nocol" ,"ach9", "ach10", "ach11","ach12")
+names(lca) <- c( "hm", "he", "voc", "nocol" ,"ach09", "ach10", "ach11","ach12")
 
 summary(lca)
 ```
@@ -85,7 +85,7 @@ Starting values: "instart for the parameters relating to the prior probabilities
 
 ```{r idre_example2}
 
-mod2 <- mix(list(hm~1, he~1, voc~1, nocol~1, ach9~1, ach10~1, ach11~1, ach12~1), 
+mod2 <- mix(list(hm~1, he~1, voc~1, nocol~1, ach09~1, ach10~1, ach11~1, ach12~1), 
            data=lca, # the dataset to use
            nstates=2, # the number of latent classes
            family=list(multinomial(),multinomial(),multinomial(),multinomial(), gaussian(),gaussian(),gaussian(),gaussian()),
@@ -190,4 +190,76 @@ ggplot(tidyr::gather(probs, key="key", value="value", -age), aes(y=value, x=age,
 
 
 "The intercept values of the multinomial logistic parameters provide the prior probabilities of each class when the covariate has value zero (note that in this case the value zero does not have much significance, scaling and/or centering of covariates may be useful in such cases). The summary function prints these values. As can be seen from those values, at age zero, the prior probability is overwhelmingly at the second class."     
+
+## Example 4: More classes
+
+```{r more_classes}
+
+mod4 <- mix(list(hm~1, he~1, voc~1, nocol~1, ach09~1, ach10~1, ach11~1, ach12~1), 
+           data=lca, # the dataset to use
+           nstates=6, # the number of latent classes
+           family=list(multinomial(),multinomial(),multinomial(),multinomial(), gaussian(),gaussian(),gaussian(),gaussian()),
+           respstart=runif(96))
+
+fmod4 <- fit(mod4, verbose=FALSE)
+
+fmod4
+summary(fmod4)
+posterior.states <- depmixS4::posterior(fmod4)
+posterior.states$state <- as.factor(posterior.states$state)
+summary(posterior.states$state) # how many cases assigned to each class?
+```
+
+
+## Example 5: mclust package
+Only works with continuous predictors: finite normal (aka Gaussian) mixture modelling. 
+```{r mclust}
+library(mclust)
+
+cont_data <- dplyr::select(lca, ach09:ach12) # continuous variables only
+
+# shows model fit (BIC) on y-axis and number of latent classes on x-axis
+BIC = mclustBIC(cont_data, 
+              G=1:9) # G tells it how many latent classes to try 
+plot(BIC) # different lines represent different assumptions about the covariance structure
+summary(BIC) # the best models
+
+mod1 = Mclust(cont_data, 
+              G=1:9, # the number of latent classes to try (it will select the best one)
+              x = BIC) # giving it this BIC object we made before means it won't have to recalculate it
+summary(mod1, parameters = TRUE)
+
+summary(as.factor(mod1$classification))
+head(round(mod1$uncertainty, 3)) # uncertainty associated with each classification
+```
+
+```{r mclust_get_classes}
+# add class assignment and uncertainty to data
+cont_data$class <- as.factor(mod1$classification)
+cont_data$uncertainty <- mod1$uncertainty
+```
+
+```{r mclust_plotting}
+
+plot.data <- cont_data %>% 
+  gather(key="measure", value="value", ach09:ach12)
+
+ggplot(plot.data, aes(y=value, x=class)) + 
+  geom_boxplot() + 
+  facet_wrap(~ measure)
+
+ggplot(plot.data, aes(x=value, fill=class)) + 
+  geom_histogram(position = "identity", alpha=.5) + 
+  facet_wrap(~ measure)
+
+summary.plot.data <- plot.data %>% 
+  group_by(class, measure) %>% 
+  summarize(z=mean(value)/sd(value))
+
+ggplot(summary.plot.data, aes(y=z, x=measure, group=class, color=class)) + 
+  geom_point() + 
+  geom_line() + 
+  ggtitle("typical LCA plot")
+
+```
 
