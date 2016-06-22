@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+options(scipen=3) # A penalty to be applied when deciding to print numeric values in fixed or exponential notation. Positive values bias towards fixed and negative towards scientific notation: fixed notation will be preferred unless it is more than scipen digits wider.
 ```
 
 Some general resources:    
@@ -236,7 +237,9 @@ head(round(mod1$uncertainty, 3)) # uncertainty associated with each classificati
 ```{r mclust_get_classes}
 # add class assignment and uncertainty to data
 cont_data$class <- as.factor(mod1$classification)
+
 cont_data$uncertainty <- mod1$uncertainty
+summary(cont_data$uncertainty)
 ```
 
 ```{r mclust_plotting}
@@ -261,5 +264,20 @@ ggplot(summary.plot.data, aes(y=z, x=measure, group=class, color=class)) +
   geom_line() + 
   ggtitle("typical LCA plot")
 
+```
+
+# Follow-up analyses
+Compare the assigned latent classes to some other categorical variable.
+
+```{r compare_to_cat_outcome}
+lca$class <- as.factor(mod1$classification)
+
+# how does the latent class assignment based on academic acheivement in grades 9 through 12 compare to whether or not students took vocational classes?
+xtabs(~ class + voc, data=lca)
+lcaxtabs <- xtabs(~ class + voc, data=lca)
+summary(lcaxtabs)
+
+library(vcd)
+assocstats(lcaxtabs)
 ```
 
