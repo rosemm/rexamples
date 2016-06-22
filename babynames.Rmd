@@ -1,0 +1,158 @@
+---
+title: "baby names"
+author: "Rose Hartman"
+date: "June 5, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(babynames)
+library(ggplot2)
+library(dplyr)
+```
+
+```{r select_names}
+
+classic.data <- babynames %>% 
+  filter(name %in% c("Eugene", "Baby", "Kellie", "Jason", "John", "Emma", "Nicholas", "Dorothy")) %>% 
+  filter(year > 1900) %>% 
+  mutate(category="classic")
+
+virtue.data <- babynames %>% 
+  filter(name %in% c("Chastity", "Honor", "Justice", "Faith", "Patience", "Earnest", "Benedict", "Noble")) %>% 
+  filter(year > 1900) %>% 
+  mutate(category="virtue")
+
+famous.data <- babynames %>% 
+  filter(name %in% c("Bella", "Hillary", "Bernard", "Donald", "Barack", "Buffy", "Angel", "Edward")) %>% 
+  filter(year > 1900) %>% 
+  mutate(category="famous")
+
+plot.data <- rbind(classic.data, virtue.data, famous.data)
+
+```
+
+
+```{r disguise_names}
+disguise_names <- function(name.df){
+  num.names <- length(unique(name.df$name))
+  placeholders <- paste0("Name ", 1:num.names)
+  
+  if("placeholder" %in% colnames(name.df)) {
+    name.df$placeholder <- NULL
+    name.df$sort <- NULL
+    name.df$category <- NULL
+    message("Note: pre-exsiting placeholder column deleted")
+  }
+  
+  key <- data.frame(name = base::sample(unique(name.df$name), size = num.names), 
+                    stringsAsFactors = FALSE) %>% 
+    left_join(select(name.df, name, category), by="name") %>% 
+    unique() %>% 
+    group_by(category) %>% 
+    sample_frac(1, replace=FALSE)
+  
+  key$placeholder <- placeholders
+  
+  disguised.df <- name.df %>% 
+    left_join(key, by=c("name", "category")) %>% 
+    tidyr::extract(col=placeholder, into="sort", regex="Name ([[:digit:]]+)", remove=FALSE)
+  disguised.df$sort <- as.numeric(disguised.df$sort)
+  disguised.df$placeholder <- reorder(disguised.df$placeholder, disguised.df$sort)
+  
+  return(disguised.df)
+}
+
+plot.data <- disguise_names(plot.data)
+
+plot.data$sex <- factor(plot.data$sex, levels=c("F", "M"))
+```
+
+```{r type_token}
+ttr <- babynames %>% 
+  group_by(year, sex) %>% 
+  summarize(type=n(), token=sum(n)) %>% 
+  mutate(ttr=type/token)
+
+ggplot(ttr, aes(y=ttr, x=year, color=sex, fill=sex)) + 
+  geom_point(alpha=.4) + 
+  geom_smooth() + 
+  labs(y=NULL, x=NULL, title="Number of unique names\n per births over time")+ 
+  theme(axis.text.y=element_blank(), axis.ticks.y=element_blank(), text=element_text(size=20))
+ggsave("plots/babyshower/ttr_year.png", width=12, height=10, units="cm")
+
+ggplot(ttr, aes(y=type, x=year, color=sex, fill=sex)) + 
+  geom_point(alpha=.4) + 
+  geom_smooth() + 
+  labs(y=NULL, x=NULL, title="Number of unique names\nover time")+ 
+  theme(axis.text.y=element_blank(), axis.ticks.y=element_blank(), text=element_text(size=20))
+ggsave("plots/babyshower/type_year.png", width=12, height=10, units="cm")
+
+ggplot(ttr, aes(y=token, x=year, color=sex, fill=sex)) + 
+  geom_point(alpha=.4) + 
+  geom_smooth() + 
+  labs(y=NULL, x=NULL, title="Number of births\nover time") + 
+  theme(axis.text.y=element_blank(), axis.ticks.y=element_blank(), text=element_text(size=20))
+ggsave("plots/babyshower/token_year.png", width=12, height=10, units="cm")
+
+```
+
+```{r plotting}
+for(p in as.character(unique(plot.data$placeholder))){
+  this.data <- filter(plot.data, placeholder == p)
+  this.data$sex <- factor(this.data$sex, levels=c("F", "M"))
+  this.category <- unique(this.data$category)
+  ggplot(this.data, aes(y=prop, x=year, color=sex)) + 
+    geom_line(size=4, alpha=.7, show.legend = FALSE) +  
+    xlim(c(1900, 2014)) +
+    labs(x=NULL, y=NULL) + 
+    scale_colour_hue(drop=FALSE) + # so it doesn't drop unused levels of sex
+    theme(text=element_text(size=25), axis.text.y=element_text(size=10), axis.text.x=element_text(size=15)) + 
+    facet_wrap(~ placeholder)
+ggsave(paste0("plots/babyshower/", this.category, "_", p, ".png"), width=11, height=10, units="cm")
+}
+
+```
+
+
+```{r the_classics}
+ggplot(classic.data, aes(y=prop, x=year, color=sex)) + 
+  geom_line() + 
+  facet_wrap(~name, scales = "free") + 
+  xlim(c(1900, 2014))
+
+ggplot(classic.data, aes(y=prop, x=year, color=name)) + 
+  geom_line() + 
+  facet_wrap(~ sex, ncol=1, scales = "free")
+
+```
+
+
+Some back up facts [http://nameberry.com/blog/nameberry-picks-13-best-virtue-names-for-boys](http://nameberry.com/blog/nameberry-picks-13-best-virtue-names-for-boys)
+```{r names_to_aspire_to}
+
+ggplot(virtue.data, aes(y=prop, x=year, color=sex)) + 
+  geom_line() + 
+  facet_wrap(~name, scales = "free") + 
+  xlim(c(1900, 2014))
+
+ggplot(virtue.data, aes(y=prop, x=year, color=name)) + 
+  geom_line() + 
+  facet_wrap(~ sex, ncol=1, scales = "free")
+```
+
+
+```{r famous_names}
+
+ggplot(famous.data, aes(y=prop, x=year, color=sex)) + 
+  geom_line() + 
+  facet_wrap(~ name, scales = "free") +
+  xlim(c(1900, 2014))
+
+ggplot(famous.data, aes(y=prop, x=year, color=name)) + 
+  geom_line() + 
+  facet_wrap(~ sex, ncol=1, scales = "free")
+```
+
+
