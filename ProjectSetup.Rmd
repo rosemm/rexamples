@@ -1,0 +1,38 @@
+---
+title: "starting a new project like a boss"
+author: "Rose Hartman"
+date: "June 30, 2016"
+output: html_document
+---
+
+1. Pick a name for the project, for example if you're studying awesomeness, you might want to call it "awesomeness-study".
+
+2. Navigate to the directory where you want this new project folder to be created. 
+I have a folder called STUDIES where I keep all of my project directories. 
+
+```{r}
+setwd("/Users/TARDIS/Documents/STUDIES")
+```
+
+3. Use ProjectTemplate to automatically generate a bunch of useful stuff.
+
+```{r}
+library(ProjectTemplate)
+create.project("awesomeness-study")
+```
+
+This makes a new directory called awesomeness-study and a bunch of directories and files within it to get you started with a lovely, organized code project.
+
+4. Make that an RStudio project. File > New Project > Associate a project with an existing working directory.
+
+5. Turn on version control. Tools > Project Options > Git/SVN > version control system: git
+
+6. Go to your github and make a new repo, probably named awesomeness-study. 
+
+7. When you make the repo, you'll see directions to push an existing repository from the command line:
+```{r eval=FALSE}
+git remote add origin https://github.com/rosemm/awesomeness-study.git
+git push -u origin master
+```
+This should be run in Terminal. You can open Terminal easily in your current working directory from RStudio: Tools > Shell. Then just run those two lines of code.
+
