@@ -19,6 +19,7 @@ Note that this only works for balanced designs (same n in each group).
 }
 \examples{
 cohen.f(means = c(4,6,8), n = 10, sd = 4)
+cohen.f(means = c(4,6,8,7,5), n = 10, sd = 4)
 
 library(pwr)
 f <- cohen.f(means = c(4,6,8), n = 10, sd = 4)
