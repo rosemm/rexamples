@@ -7,13 +7,12 @@
 #' @param n sample size in each group
 #' @param sd standard deviation in each group (also assumed to be the population standard deviation)
 #'
-#' @return f
 #'
 #' @examples
-#' coehn.f(means = c(4,6,8), n = 10, sd = 4)
+#' cohen.f(means = c(4,6,8), n = 10, sd = 4)
 #' 
 #' library(pwr)
-#' f <- coehn.f(means = c(4,6,8), n = 10, sd = 4)
+#' f <- cohen.f(means = c(4,6,8), n = 10, sd = 4)
 #' pwr.anova.test(k = 3, n = 10, f = f)
 #' 
 #' @references Cohen, J. (1988). Statistical power analysis for the behavioral sciences (2nd ed.). New York:Academic Press.

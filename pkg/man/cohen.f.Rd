@@ -13,18 +13,15 @@ cohen.f(means = NULL, n = NULL, sd = NULL)
 
 \item{sd}{standard deviation in each group (also assumed to be the population standard deviation)}
 }
-\value{
-f
-}
 \description{
 Calculates Cohen's f from group means, sample size, and pooled standard deviation for a one-way ANOVA.
 Note that this only works for balanced designs (same n in each group).
 }
 \examples{
-coehn.f(means = c(4,6,8), n = 10, sd = 4)
+cohen.f(means = c(4,6,8), n = 10, sd = 4)
 
 library(pwr)
-f <- coehn.f(means = c(4,6,8), n = 10, sd = 4)
+f <- cohen.f(means = c(4,6,8), n = 10, sd = 4)
 pwr.anova.test(k = 3, n = 10, f = f)
 
 }
