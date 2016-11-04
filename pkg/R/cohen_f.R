@@ -6,7 +6,8 @@
 #' @param means a vector of group means
 #' @param n sample size in each group
 #' @param sd standard deviation in each group (also assumed to be the population standard deviation)
-#'
+#' 
+#' @return f
 #'
 #' @examples
 #' cohen.f(means = c(4,6,8), n = 10, sd = 4)

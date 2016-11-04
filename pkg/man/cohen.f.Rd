@@ -13,6 +13,9 @@ cohen.f(means = NULL, n = NULL, sd = NULL)
 
 \item{sd}{standard deviation in each group (also assumed to be the population standard deviation)}
 }
+\value{
+f
+}
 \description{
 Calculates Cohen's f from group means, sample size, and pooled standard deviation for a one-way ANOVA.
 Note that this only works for balanced designs (same n in each group).
