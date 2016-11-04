@@ -21,7 +21,7 @@
 #' @seealso \code{\link[pwr]{pwr.anova.test}}, \code{\link[effsize]{cohen.d}}
 #'
 #' @export
-coehn.f <- function(means = NULL, n = NULL, sd = NULL){
+cohen.f <- function(means = NULL, n = NULL, sd = NULL){
   gm <- mean(means) # grand mean
   N <- n*length(means) # total N
   f <- sqrt(n/N*sum((means-gm)^2)/sd^2)
