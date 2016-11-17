@@ -136,8 +136,23 @@ corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE
                          caption = caption)
 }
 
-
-xtabs_table <- function(xtab, var.names = NULL, caption = NULL, plot = FALSE){
+#' Creates a clean crosstabs table 
+#' 
+#' Uses \code{\link[htmlTable]{htmlTable}} to make a clean, pretty html-formatted table from a \code{xtabs} object.
+#'
+#' @param xtab a contingency table with class "xtabs"
+#' @param var.names an optional vector of variable names to use in table
+#' @param caption an optional caption to include for table
+#' 
+#' @return An \code{\link[htmlTable]{htmlTable}} table, which will appear in the Viewer. 
+#' Display it in your browswer, and then copy-paste it into Word or Libre Office.
+#'
+#' @examples
+#' x <- xtabs(~ cyl + gear, data = mtcars)
+#' xtabs_table(x, var.names = c("Number of cylinders", "Number of gears"))
+#'
+#' @export
+xtabs_table <- function(xtab, var.names = NULL, caption = NULL){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
   
   if(!is.null(var.names)){
@@ -153,10 +168,7 @@ xtabs_table <- function(xtab, var.names = NULL, caption = NULL, plot = FALSE){
   
   table <- table %>% 
     tidyr::spread(var2, Freq)
-  
-  if(plot){
-
-  }
+ 
   message("Note that you'll need to clean up the footnote to report the chi-squared test in proper APA format")
   htmlTable::htmlTable(dplyr::select(table, -var1),
                        rnames = levels1,
