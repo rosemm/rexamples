@@ -32,7 +32,7 @@ simple_effects <- function(outcome, test, by, data){
     SS <- models[[by.var]][1,2]
     MS <- models[[by.var]][1,3]
     F.stat <- MS/MSW
-    p <- df(x=F.stat, df1=df.num, df2=df.res) 
+    p <- pf(q=F.stat, df1=df.num, df2=df.res, lower.tail = FALSE) 
     # add to simple effects data frame
     simple.effects <- rbind(simple.effects, data.frame(Df=df.num, 'Sum Sq'=SS, 'Mean Sq' = MS, 'F value' = F.stat, p = p))
   }
