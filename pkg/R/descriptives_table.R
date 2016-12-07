@@ -1,8 +1,22 @@
+#' Pretty table for descriptives of categorical variables
+#'
+#' Uses \code{\link[htmlTable]{htmlTable}} to produce nicely formated tables summarizing a set of categorical variables.
+#'
+#' @param cat_vars a dataframe of the categorical variables (factors) to include in the table
+#' @param var.names an (optional) vector of strings the variable names (will use the column names in cat_vars if none are provided here)
+#' @param caption an (optional) caption to add to the table
+#' 
+#' @examples
+#' library(dplyr)
+#' warpbreaks %>%
+#' select(wool, tension) %>%
+#' cat_descriptives_table(var.names=c("Type of wool", "Level of tension"))
+#' @export
 cat_descriptives_table <- function(cat_vars, var.names = NULL, caption=NULL){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
   
   table <- cat_vars %>% 
-    tidyr::gather() %>% 
+    tidyr::gather(factor_key=TRUE) %>% 
     dplyr::mutate(value=dplyr::recode_factor(value, a="a", .missing = "Missing")) %>% 
     dplyr::count(key, value) %>% 
     dplyr::mutate(perc = 100 * round(n/nrow(cat_vars), 3),
@@ -23,6 +37,20 @@ cat_descriptives_table <- function(cat_vars, var.names = NULL, caption=NULL){
                        caption=caption)
 }
 
+#' Binary vectors
+#'
+#' Is a general test of whether a vector is coded like a binary variable, with only 0's and 1's. 
+#'
+#' @param x the vector to test
+#' 
+#' @examples
+#' is.binary(mtcars$vs) # TRUE
+#' is.binary(mtcars$gear) # FALSE
+#' 
+#' # missing values don't prevent it from identifying a vector as binary
+#' is.binary(c(mtcars$vs, NA)) # TRUE
+#'
+#' @export
 is.binary <- function(x){
   bin <- all(unique(na.omit(x)) %in% c(0,1))
   return(bin)
@@ -38,10 +66,10 @@ bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent
     
   
   table <- bin_vars %>% 
-    tidyr::gather() %>% 
+    tidyr::gather(factor_key=TRUE) %>% 
     dplyr::group_by(key) %>% 
     dplyr::summarise_all(funs(prop = mean, count_missing), na.rm=TRUE) %>% 
-    dplyr::mutate(perc_missing = 100 * round(count_missing/nrow(cont_vars), 3),
+    dplyr::mutate(perc_missing = 100 * round(count_missing/nrow(bin_vars), 3),
                   perc_missing = paste0("(", format(perc_missing, nsmall = 1, trim = TRUE), "%)"),
                   perc = paste0(format(100 * round(prop, 3), nsmall = 1, trim = TRUE), "%")) %>% 
     tidyr::unite("Missing", count_missing, perc_missing, sep = " ") %>% 
@@ -79,7 +107,7 @@ cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, s
   
   table <- cont_vars %>% 
     dplyr::mutate_all(as.numeric) %>% 
-    tidyr::gather() %>% 
+    tidyr::gather(factor_key=TRUE) %>% 
     dplyr::group_by(key) %>% 
     dplyr::summarise_all(funs(mean, sd, count_missing), na.rm=TRUE) %>% 
     dplyr::mutate(perc_missing = 100 * round(count_missing/nrow(cont_vars), 3),
