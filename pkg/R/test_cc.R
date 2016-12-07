@@ -1,5 +1,20 @@
-# tests of canonical dimensions
-# from http://www.ats.ucla.edu/stat/r/dae/canonical.htm, with slight modifications
+#' Tests of canonical dimensions
+#'
+#' Based closely on the code from \url{http://www.ats.ucla.edu/stat/r/dae/canonical.htm}, with slight modifications to make it work more easily as a function.
+#' 
+#' @param cc the canonical correlations to test, output from from \code{\link[CCA]{cc}}
+#' 
+#' @return A data frame where each row is one dimension from the cannonical correlation (in order from largest to smallest), with columns for Wilk's Lambda, F statistic, df for the F test, and p value for the F test.
+#'
+#' @examples
+#' cc1 <- CCA::cc(iris[ , 1:2], iris[ , 3:4])
+#' test_cc(cc1)
+#' 
+#' @seealso \code{\link[CCA]{cc}}
+#' 
+#' @references \url{http://www.ats.ucla.edu/stat/r/dae/canonical.htm}
+#'
+#' @export
 test_cc <- function(cc){
   ev <- (1 - cc$cor^2)
   
