@@ -10,7 +10,7 @@ test_cc(cc)
 \item{cc}{the canonical correlations to test, output from from \code{\link[CCA]{cc}}}
 }
 \value{
-A data frame where each row is one dimension from the cannonical correlation (in order from largest to smallest), with columns for Wilk's Lambda, F statistic, df for the F test, and p value for the F test.
+A data frame where each row is one dimension from the cannonical correlation (in order from largest to smallest), with columns for R-squared, Wilk's Lambda, F statistic, df for the F test, and p value for the F test.
 }
 \description{
 Based closely on the code from \url{http://www.ats.ucla.edu/stat/r/dae/canonical.htm}, with slight modifications to make it work more easily as a function.
@@ -22,6 +22,8 @@ test_cc(cc1)
 }
 \references{
 \url{http://www.ats.ucla.edu/stat/r/dae/canonical.htm}
+
+Rencher, A. C. (2002). Methods of multivariate analysis, 2nd ed. John Wiley & Sons. p.367-p.370
 }
 \seealso{
 \code{\link[CCA]{cc}}
