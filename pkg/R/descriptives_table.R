@@ -12,7 +12,7 @@
 #' select(wool, tension) %>%
 #' cat_descriptives_table(var.names=c("Type of wool", "Level of tension"))
 #' @export
-cat_descriptives_table <- function(cat_vars, var.names = NULL, caption=NULL){
+cat_descriptives_table <- function(cat_vars, var.names = NULL, caption=NULL, show.missing = TRUE){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
   
   table <- cat_vars %>% 
@@ -22,6 +22,10 @@ cat_descriptives_table <- function(cat_vars, var.names = NULL, caption=NULL){
     dplyr::mutate(perc = 100 * round(n/nrow(cat_vars), 3),
                   perc = paste0("(", format(perc, nsmall = 1, trim = TRUE), "%)")) %>% 
     dplyr::ungroup()
+  if(!show.missing){
+    table <- table %>% 
+      dplyr::filter(value != "Missing") 
+  }
   if(is.null(var.names)){
     var.names <- unique(table$key)
   } else {
@@ -56,11 +60,14 @@ is.binary <- function(x){
   return(bin)
 }
 
-bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent above threshold", caption=NULL, show.missing = TRUE){
+#'
+#'
+#' @export
+bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent above threshold", caption=NULL, show.missing = TRUE, show.n = FALSE){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
 
-  # bin_vars <- bin_vars %>% 
-  #   dplyr::mutate_if(is.factor, funs(as.numeric(.) - 1)) 
+  bin_vars <- bin_vars %>%
+    dplyr::mutate_if(is.factor, funs(as.numeric(.) - 1))
   
   stopifnot(all(as.matrix(dplyr::summarize_all(bin_vars, is.binary))))
     
@@ -68,32 +75,42 @@ bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent
   table <- bin_vars %>% 
     tidyr::gather(factor_key=TRUE) %>% 
     dplyr::group_by(key) %>% 
-    dplyr::summarise_all(funs(prop = mean, count_missing), na.rm=TRUE) %>% 
+    dplyr::summarise_all(funs(prop = mean, count_missing, count_obs), na.rm=TRUE) %>% 
     dplyr::mutate(perc_missing = 100 * round(count_missing/nrow(bin_vars), 3),
                   perc_missing = paste0("(", format(perc_missing, nsmall = 1, trim = TRUE), "%)"),
                   perc = paste0(format(100 * round(prop, 3), nsmall = 1, trim = TRUE), "%")) %>% 
     tidyr::unite("Missing", count_missing, perc_missing, sep = " ") %>% 
-    dplyr::ungroup() %>% 
-    dplyr::select(key, perc, Missing)
+    dplyr::ungroup() 
+  
+  if(show.n){
+    table <- table %>% 
+      dplyr::select(key, perc, Missing, count_obs)
+    tab_header <- c(header, "Missing", "N")
+  } else {
+    table <- table %>% 
+      dplyr::select(key, perc, Missing)
+    tab_header <- c(header, "Missing")
+  }
+  
   if(is.null(var.names)){
     var.names <- unique(table$key)
   } else {
     stopifnot(length(var.names) == length(unique(table$key)))
   }
   
-  if(show.missing){
+  ncol <- 1 + sum(show.missing, show.n)
+  align <- paste(rep("r", ncol), collapse = "")
+  
+  if(!show.missing){
+    table <- table %>% 
+      dplyr::select(-Missing)
+    tab_header <- tab_header[tab_header != "Missing"]
+  }
     htmlTable::htmlTable(dplyr::select(table, -key), 
-                         header = c(header, "Missing"),
-                         align = "rr",
+                         header = tab_header,
+                         align = align,
                          rnames = var.names, 
                          caption=caption)
-  } else {
-    htmlTable::htmlTable(dplyr::select(table, -key, -Missing), 
-                         header = header,
-                         rnames = var.names, 
-                         align = "r",
-                         caption = caption)
-  }
 }
 
 
@@ -101,6 +118,9 @@ count_missing <- function(x, ...){
   length(which(is.na(x)))
 }
 
+count_obs <- function(x, ...){
+  length(which(!is.na(x)))
+}
 
 cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, show.missing = TRUE){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
