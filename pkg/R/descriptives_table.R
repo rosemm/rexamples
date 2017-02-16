@@ -60,14 +60,19 @@ is.binary <- function(x){
   return(bin)
 }
 
-#'
+#' Binary descriptives table
 #'
 #' @export
-bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent above threshold", caption=NULL, show.missing = TRUE, show.n = FALSE){
+bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent above threshold", caption=NULL, show.missing = TRUE, show.n = FALSE, show.n.sucess = FALSE){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
-
-  bin_vars <- bin_vars %>%
-    dplyr::mutate_if(is.factor, funs(as.numeric(.) - 1))
+  
+  # convert factors to numeric
+  factors <- data.frame(bin_vars[, sapply(bin_vars, is.factor)])
+  colnames(factors) <- colnames(bin_vars)[sapply(bin_vars, is.factor)]
+  if(ncol(factors) > 0){
+    factors <- mutate_all(factors, funs(as.numeric(.) - 1))
+    bin_vars <- cbind(bin_vars[, !sapply(bin_vars, is.factor)], factors)
+  }
   
   stopifnot(all(as.matrix(dplyr::summarize_all(bin_vars, is.binary))))
     
@@ -75,37 +80,44 @@ bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent
   table <- bin_vars %>% 
     tidyr::gather(factor_key=TRUE) %>% 
     dplyr::group_by(key) %>% 
-    dplyr::summarise_all(funs(prop = mean, count_missing, count_obs), na.rm=TRUE) %>% 
+    dplyr::summarise_all(funs(prop = mean, count_missing, count_obs, count_sucess = sum), na.rm=TRUE) %>% 
     dplyr::mutate(perc_missing = 100 * round(count_missing/nrow(bin_vars), 3),
                   perc_missing = paste0("(", format(perc_missing, nsmall = 1, trim = TRUE), "%)"),
                   perc = paste0(format(100 * round(prop, 3), nsmall = 1, trim = TRUE), "%")) %>% 
     tidyr::unite("Missing", count_missing, perc_missing, sep = " ") %>% 
     dplyr::ungroup() 
   
-  if(show.n){
+    # full table
     table <- table %>% 
-      dplyr::select(key, perc, Missing, count_obs)
-    tab_header <- c(header, "Missing", "N")
-  } else {
-    table <- table %>% 
-      dplyr::select(key, perc, Missing)
-    tab_header <- c(header, "Missing")
-  }
-  
+      dplyr::select(key, count_sucess, perc,  Missing, count_obs)
+    tab_header <- c("n", header, "Missing", "N")
+    
+    # remove unnecessary columns
+    if(!show.missing){
+      table <- table %>% 
+        dplyr::select(-Missing)
+      tab_header <- tab_header[tab_header != "Missing"]
+    }
+    if(!show.n){
+      table <- table %>% 
+        dplyr::select(-count_obs)
+      tab_header <- tab_header[tab_header != "N"]
+    }
+    if(!show.n.sucess){
+      table <- table %>% 
+        dplyr::select(-count_sucess)
+      tab_header <- tab_header[tab_header != "n"]
+    }
   if(is.null(var.names)){
     var.names <- unique(table$key)
   } else {
     stopifnot(length(var.names) == length(unique(table$key)))
   }
   
-  ncol <- 1 + sum(show.missing, show.n)
+  ncol <- 1 + sum(show.missing, show.n, show.n.sucess)
   align <- paste(rep("r", ncol), collapse = "")
   
-  if(!show.missing){
-    table <- table %>% 
-      dplyr::select(-Missing)
-    tab_header <- tab_header[tab_header != "Missing"]
-  }
+  
     htmlTable::htmlTable(dplyr::select(table, -key), 
                          header = tab_header,
                          align = align,
@@ -122,6 +134,9 @@ count_obs <- function(x, ...){
   length(which(!is.na(x)))
 }
 
+#' Continuous descriptives table
+#'
+#' @export
 cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, show.missing = TRUE){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
   
@@ -157,7 +172,10 @@ cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, s
   }
 }
 
-corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE){
+#' Correlations table, with optional descriptives
+#'
+#' @export
+corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE, show.means = FALSE, digits = 2, stars = FALSE){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable), require(corrr))
   
   if(!is.null(var.names)){
@@ -167,8 +185,26 @@ corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE
   
   table <- cont_vars %>% 
     correlate(use="pairwise.complete.obs") %>% 
-    shave() %>% 
-    fashion()
+    shave(upper = FALSE) %>% 
+    fashion(digits = digits)
+  row.names(table) <- paste(1:ncol(cont_vars), row.names(table), sep = ". ")
+  # n.rgroup sets how to add horizontal lines to the table (only needed if adding descriptive stats below)
+  n.rgroup <- NULL 
+  
+  if(stars){
+    stopifnot(require(Hmisc))
+    p_vals <- rcorr(as.matrix(cont_vars), type="pearson")$P 
+    p_vals <- ifelse(p_vals < .001, "***", 
+                     ifelse(p_vals < .01, "** ",
+                            ifelse(p_vals < .05, "*  ",
+                                   ifelse(p_vals >= .05, "   ", NA))))
+    p_vals <- ifelse(upper.tri(p_vals), p_vals, "")
+    
+    for(i in 1:ncol(table)){
+      table[,i] <- paste0(table[,i], p_vals[,i])
+    }
+    detach("package:Hmisc", unload=TRUE)
+  }
   
   if(plot){
     stopifnot(require(ggplot2))
@@ -180,8 +216,30 @@ corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE
       rplot()
     print(p)
   }
+  if(show.means){
+    means.table <- cont_vars %>% 
+      tidyr::gather("key", "value", factor_key = TRUE) %>% 
+      dplyr::group_by(key) %>% 
+      dplyr::summarize(Mean = round(mean(value, na.rm = TRUE), digits), 
+                SD = round(sd(value, na.rm = TRUE), digits), 
+                min = round(min(value, na.rm = TRUE), digits), 
+                max = round(max(value, na.rm = TRUE), digits)) %>% 
+      # convert min and max to Range
+      tidyr::unite(Range, min, max, sep = " - ") %>% 
+      # transpose table so variables are across the top and each row is a summary stat
+      dplyr::select(-key) %>% 
+      t()
+    
+    # add descriptive stats as additional rows below the correlations table
+    table <- rbind(table, means.table)
+    # use row row grouping in the table
+    n.rgroup <- c(ncol(cont_vars), 3)
+  }
     htmlTable::htmlTable(table,
-                         caption = caption)
+                         caption = caption,
+                         header = 1:ncol(cont_vars),
+                         rgroup = rep("", length(n.rgroup)),
+                         n.rgroup = n.rgroup)
 }
 
 #' Creates a clean crosstabs table 
