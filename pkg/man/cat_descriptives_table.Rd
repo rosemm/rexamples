@@ -4,7 +4,8 @@
 \alias{cat_descriptives_table}
 \title{Pretty table for descriptives of categorical variables}
 \usage{
-cat_descriptives_table(cat_vars, var.names = NULL, caption = NULL)
+cat_descriptives_table(cat_vars, var.names = NULL, caption = NULL,
+  show.missing = TRUE)
 }
 \arguments{
 \item{cat_vars}{a dataframe of the categorical variables (factors) to include in the table}
