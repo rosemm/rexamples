@@ -22,5 +22,6 @@ library(dplyr)
 warpbreaks \%>\%
 select(wool, tension) \%>\%
 cat_descriptives_table(var.names=c("Type of wool", "Level of tension"))
+
 }
 

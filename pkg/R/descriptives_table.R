@@ -11,6 +11,9 @@
 #' warpbreaks %>%
 #' select(wool, tension) %>%
 #' cat_descriptives_table(var.names=c("Type of wool", "Level of tension"))
+#' 
+#' @import htmlTable
+#' 
 #' @export
 cat_descriptives_table <- function(cat_vars, var.names = NULL, caption=NULL, show.missing = TRUE){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
@@ -134,6 +137,46 @@ count_obs <- function(x, ...){
   length(which(!is.na(x)))
 }
 
+
+#' Use SPSS variable labels as columnn names
+#' 
+#' Checks for the presence of variable labels from SPSS data files
+#' read with either \code{\link[forign]{read.spss}} or \code{\link[haven]{read_spss}}.
+#' If available, it will overwrite the column names of df with variable names.
+#' For any columns where variable labels are not available, the original column names will be retained.
+#' 
+#' @param df A dataframe from either \code{\link[forign]{read.spss}} or \code{\link[haven]{read_spss}}
+#' 
+#' @return A copy of the same dataframe, but with column names replaced with variable labels whereever possible.
+#'
+#' @export
+use_var_labels <- function(df){
+  if(!is.null(attr(df, "variable.labels"))){
+    # this is where variable labels are stored after foreign::read.spss()
+    labels <- attr(df, "variable.labels")
+  } else if("tbl" %in% class(df)){
+    # this is where variable labels are stored after haven::read_spss()
+    labels <- sapply(df, attr, "label")
+    no_lab <- sapply(labels, is.null)
+    # replace NULL with empty string, to preserve ordering
+    for(i in 1:length(labels)){
+      if(no_lab[i]) labels[i] <- ""
+    }
+    # reformat to a vector
+    labels <- unlist(labels)
+
+  } else { 
+    # if no variable labels discovered, just use column names
+    labels <- colnames(df)
+  }
+  
+  # overwrite colnames with variable labels
+  colnames(df)[labels != ""] <- labels[labels != ""]
+  
+  return(df)
+}
+
+
 #' Continuous descriptives table
 #'
 #' @export
@@ -178,15 +221,17 @@ cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, s
 corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE, show.means = FALSE, digits = 2, stars = FALSE){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable), require(corrr))
   
+  stopifnot(is.data.frame(cont_vars))
+  
   if(!is.null(var.names)){
     stopifnot(length(var.names) == length(colnames(cont_vars)))
     colnames(cont_vars) <- var.names
   }
   
   table <- cont_vars %>% 
-    correlate(use="pairwise.complete.obs") %>% 
-    shave(upper = FALSE) %>% 
-    fashion(digits = digits)
+    corrr::correlate(use="pairwise.complete.obs") %>% 
+    corrr::shave(upper = FALSE) %>% 
+    corrr::fashion()
   row.names(table) <- paste(1:ncol(cont_vars), row.names(table), sep = ". ")
   # n.rgroup sets how to add horizontal lines to the table (only needed if adding descriptive stats below)
   n.rgroup <- NULL 
@@ -226,6 +271,7 @@ corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE
                 max = round(max(value, na.rm = TRUE), digits)) %>% 
       # convert min and max to Range
       tidyr::unite(Range, min, max, sep = " - ") %>% 
+      dplyr::ungroup() %>% 
       # transpose table so variables are across the top and each row is a summary stat
       dplyr::select(-key) %>% 
       t()
