@@ -19,7 +19,9 @@
 cat_descriptives_table <- function(cat_vars, var.names = NULL, caption=NULL, show.missing = TRUE){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
   
-  if(var.names == "labels") cat_vars <- use_var_labels(cat_vars)
+  if(!is.null(var.names)){
+    if(var.names == "labels") cat_vars <- use_var_labels(cat_vars)
+  }
   
   table <- cat_vars %>% 
     tidyr::gather(factor_key=TRUE) %>% 
@@ -32,7 +34,9 @@ cat_descriptives_table <- function(cat_vars, var.names = NULL, caption=NULL, sho
     table <- table %>% 
       dplyr::filter(value != "Missing") 
   }
-  if(is.null(var.names) | var.names == "labels"){
+  if(is.null(var.names)){
+    var.names <- unique(table$key)
+  } else if (var.names == "labels"){
     var.names <- unique(table$key)
   } else {
     stopifnot(length(var.names) == length(unique(table$key)))
@@ -84,7 +88,9 @@ bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent
   
   stopifnot(all(as.matrix(dplyr::summarize_all(bin_vars, is.binary))))
   
-  if(var.names == "labels") bin_vars <- use_var_labels(bin_vars)  
+  if(!is.null(var.names)){
+    if(var.names == "labels") bin_vars <- use_var_labels(bin_vars)
+  } 
   
   table <- bin_vars %>% 
     tidyr::gather(factor_key=TRUE) %>% 
@@ -117,11 +123,14 @@ bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent
         dplyr::select(-count_sucess)
       tab_header <- tab_header[tab_header != "n"]
     }
-  if(is.null(var.names | var.names == "labels")){
-    var.names <- unique(table$key)
-  } else {
-    stopifnot(length(var.names) == length(unique(table$key)))
-  }
+  
+    if(is.null(var.names)){
+      var.names <- unique(table$key)
+    } else if (var.names == "labels"){
+      var.names <- unique(table$key)
+    } else {
+      stopifnot(length(var.names) == length(unique(table$key)))
+    }
   
   ncol <- 1 + sum(show.missing, show.n, show.n.sucess)
   align <- paste(rep("r", ncol), collapse = "")
@@ -191,7 +200,9 @@ use_var_labels <- function(df){
 cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, show.missing = TRUE){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
   
-  if(var.names == "labels") cont_vars <- use_var_labels(cont_vars)
+  if(!is.null(var.names)){
+    if(var.names == "labels") cont_vars <- use_var_labels(cont_vars)
+  }
   
   table <- cont_vars %>% 
     dplyr::mutate_all(as.numeric) %>% 
@@ -204,11 +215,15 @@ cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, s
                   sd = format(round(sd, 2), nsmall = 2, trim = TRUE)) %>% 
     tidyr::unite("Missing", count_missing, perc_missing, sep = " ") %>% 
     dplyr::ungroup()
-  if(is.null(var.names) | var.names == "labels"){
+  
+  if(is.null(var.names)){
+    var.names <- unique(table$key)
+  } else if (var.names == "labels"){
     var.names <- unique(table$key)
   } else {
     stopifnot(length(var.names) == length(unique(table$key)))
   }
+
   
   if(show.missing){
     htmlTable::htmlTable(dplyr::select(table, -key), 
@@ -235,9 +250,10 @@ corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE
   
   stopifnot(is.data.frame(cont_vars))
   
-  if(var.names == "labels") { 
+  if(is.null(var.names)){
+  } else if(var.names == "labels") { 
     cont_vars <- use_var_labels(cont_vars)
-  } else if(!is.null(var.names)) {
+  } else {
     stopifnot(length(var.names) == length(colnames(cont_vars)))
     colnames(cont_vars) <- var.names
   }
