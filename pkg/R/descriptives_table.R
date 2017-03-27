@@ -68,6 +68,8 @@ is.binary <- function(x){
 
 #' Binary descriptives table
 #'
+#'@inheritParams cat_descriptives_table
+#'
 #' @export
 bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent above threshold", caption=NULL, show.missing = TRUE, show.n = FALSE, show.n.sucess = FALSE){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
@@ -183,6 +185,8 @@ use_var_labels <- function(df){
 
 #' Continuous descriptives table
 #'
+#'@inheritParams cat_descriptives_table
+#'
 #' @export
 cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, show.missing = TRUE){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
@@ -222,6 +226,8 @@ cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, s
 }
 
 #' Correlations table, with optional descriptives
+#'
+#'@inheritParams cat_descriptives_table
 #'
 #' @export
 corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE, show.means = FALSE, digits = 2, stars = FALSE){
