@@ -10,7 +10,8 @@ cat_descriptives_table(cat_vars, var.names = NULL, caption = NULL,
 \arguments{
 \item{cat_vars}{a dataframe of the categorical variables (factors) to include in the table}
 
-\item{var.names}{an (optional) vector of strings the variable names (will use the column names in cat_vars if none are provided here)}
+\item{var.names}{an (optional) vector of strings the variable names (will use the column names in cat_vars if none are provided here). 
+If var.names is simply "labels" then it will attempt to use variable labels that may have been read in when the dataframe was created (see \code{\link{use_var_labels}}).}
 
 \item{caption}{an (optional) caption to add to the table}
 }
