@@ -6,6 +6,7 @@
 #' @param var.names an (optional) vector of strings the variable names (will use the column names in cat_vars if none are provided here). 
 #' If var.names is simply "labels" then it will attempt to use variable labels that may have been read in when the dataframe was created (see \code{\link{use_var_labels}}).
 #' @param caption an (optional) caption to add to the table
+#' @param ... additional arguments passed to \code{\link[htmlTable]{htmlTable}}
 #' 
 #' @examples
 #' library(dplyr)
@@ -16,7 +17,7 @@
 #' @import htmlTable
 #' 
 #' @export
-cat_descriptives_table <- function(cat_vars, var.names = NULL, caption=NULL, show.missing = TRUE){
+cat_descriptives_table <- function(cat_vars, var.names = NULL, caption=NULL, show.missing = TRUE, ...){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
   
   if(!is.null(var.names)){
@@ -48,7 +49,7 @@ cat_descriptives_table <- function(cat_vars, var.names = NULL, caption=NULL, sho
                        align = "lrr",
                        rgroup = var.names, 
                        n.rgroup = n.rgroup,
-                       caption=caption)
+                       caption = caption, ...)
 }
 
 #' Binary vectors
@@ -75,7 +76,7 @@ is.binary <- function(x){
 #'@inheritParams cat_descriptives_table
 #'
 #' @export
-bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent above threshold", caption=NULL, show.missing = TRUE, show.n = FALSE, show.n.sucess = FALSE){
+bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent above threshold", caption=NULL, show.missing = TRUE, show.n = FALSE, show.n.sucess = FALSE, ...){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
   
   # convert factors to numeric
@@ -140,7 +141,7 @@ bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent
                          header = tab_header,
                          align = align,
                          rnames = var.names, 
-                         caption=caption)
+                         caption = caption, ...)
 }
 
 
@@ -197,7 +198,7 @@ use_var_labels <- function(df){
 #'@inheritParams cat_descriptives_table
 #'
 #' @export
-cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, show.missing = TRUE){
+cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, show.missing = TRUE, ...){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable))
   
   if(!is.null(var.names)){
@@ -230,7 +231,7 @@ cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, s
                          header = c("Mean", "SD", "Missing"),
                          rnames = var.names, 
                          align = "rrr",
-                         caption = caption)
+                         caption = caption, ...)
   } else {
     htmlTable::htmlTable(dplyr::select(table, -key, -Missing), 
                          header = c("Mean", "SD"),
@@ -245,7 +246,7 @@ cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, s
 #'@inheritParams cat_descriptives_table
 #'
 #' @export
-corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE, show.means = FALSE, digits = 2, stars = FALSE){
+corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE, show.means = FALSE, digits = 2, stars = FALSE, ...){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable), require(corrr))
   
   stopifnot(is.data.frame(cont_vars))
@@ -315,7 +316,7 @@ corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE
                          caption = caption,
                          header = 1:ncol(cont_vars),
                          rgroup = rep("", length(n.rgroup)),
-                         n.rgroup = n.rgroup)
+                         n.rgroup = n.rgroup, ...)
 }
 
 #' Creates a clean crosstabs table 

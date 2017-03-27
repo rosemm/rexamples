@@ -6,13 +6,15 @@
 \usage{
 bin_descriptives_table(bin_vars, var.names = NULL,
   header = "Percent above threshold", caption = NULL, show.missing = TRUE,
-  show.n = FALSE, show.n.sucess = FALSE)
+  show.n = FALSE, show.n.sucess = FALSE, ...)
 }
 \arguments{
 \item{var.names}{an (optional) vector of strings the variable names (will use the column names in cat_vars if none are provided here). 
 If var.names is simply "labels" then it will attempt to use variable labels that may have been read in when the dataframe was created (see \code{\link{use_var_labels}}).}
 
 \item{caption}{an (optional) caption to add to the table}
+
+\item{...}{additional arguments passed to \code{\link[htmlTable]{htmlTable}}}
 }
 \description{
 Binary descriptives table

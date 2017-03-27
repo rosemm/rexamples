@@ -5,13 +5,15 @@
 \title{Correlations table, with optional descriptives}
 \usage{
 corr_table(cont_vars, var.names = NULL, caption = NULL, plot = FALSE,
-  show.means = FALSE, digits = 2, stars = FALSE)
+  show.means = FALSE, digits = 2, stars = FALSE, ...)
 }
 \arguments{
 \item{var.names}{an (optional) vector of strings the variable names (will use the column names in cat_vars if none are provided here). 
 If var.names is simply "labels" then it will attempt to use variable labels that may have been read in when the dataframe was created (see \code{\link{use_var_labels}}).}
 
 \item{caption}{an (optional) caption to add to the table}
+
+\item{...}{additional arguments passed to \code{\link[htmlTable]{htmlTable}}}
 }
 \description{
 Correlations table, with optional descriptives
