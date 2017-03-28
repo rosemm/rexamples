@@ -23,6 +23,6 @@ If var.names is simply "labels" then it will attempt to use variable labels that
 \item{...}{additional arguments passed to \code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}}}
 }
 \description{
-Continuous descriptives table
+Uses \code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}} to produce nicely formated tables summarizing a set of continuous variables.
 }
 
