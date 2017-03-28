@@ -2,11 +2,13 @@
 #'
 #' Uses \code{\link[htmlTable]{htmlTable}} to produce nicely formated tables summarizing a set of categorical variables.
 #'
-#' @param vars a dataframe of the categorical variables (factors) to include in the table
+#' @param vars a dataframe of the variables to include in the table
 #' @param var.names an (optional) vector of strings the variable names (will use the column names in vars if none are provided here). 
 #' If var.names is simply "labels" then it will attempt to use variable labels that may have been read in when the dataframe was created (see \code{\link{use_var_labels}}).
 #' @param caption an (optional) caption to add to the table
-#' @param type specify which function to use to generate the table (\code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}})
+#' @param show.missing logical indicating whether or not to include information on the number of missing cases
+#' @param type a charcter string specifying which function to use to generate the table 
+#' (\code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}}). Default is "htmlTable".
 #' @param ... additional arguments passed to \code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}}
 #' 
 #' @examples
