@@ -2,11 +2,12 @@
 #'
 #' Uses \code{\link[htmlTable]{htmlTable}} to produce nicely formated tables summarizing a set of categorical variables.
 #'
-#' @param cat_vars a dataframe of the categorical variables (factors) to include in the table
-#' @param var.names an (optional) vector of strings the variable names (will use the column names in cat_vars if none are provided here). 
+#' @param vars a dataframe of the categorical variables (factors) to include in the table
+#' @param var.names an (optional) vector of strings the variable names (will use the column names in vars if none are provided here). 
 #' If var.names is simply "labels" then it will attempt to use variable labels that may have been read in when the dataframe was created (see \code{\link{use_var_labels}}).
 #' @param caption an (optional) caption to add to the table
-#' @param ... additional arguments passed to \code{\link[htmlTable]{htmlTable}}
+#' @param type specify which function to use to generate the table (\code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}})
+#' @param ... additional arguments passed to \code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}}
 #' 
 #' @examples
 #' library(dplyr)
@@ -17,18 +18,20 @@
 #' @import htmlTable
 #' 
 #' @export
-cat_descriptives_table <- function(cat_vars, var.names = NULL, caption=NULL, show.missing = TRUE, ...){
-  stopifnot(require(dplyr), require(tidyr), require(htmlTable))
+cat_descriptives_table <- function(vars, var.names = NULL, caption=NULL, show.missing = TRUE, type="htmlTable", ...){
+  stopifnot(require(dplyr), require(tidyr))
+  if(type == "htmlTable") stopifnot(require(htmlTable))
+  if(type == "pander") stopifnot(require(pander))
   
   if(!is.null(var.names)){
-    if(var.names == "labels") cat_vars <- use_var_labels(cat_vars)
+    if(all(var.names == "labels")) vars <- use_var_labels(vars)
   }
   
-  table <- cat_vars %>% 
+  table <- vars %>% 
     tidyr::gather(factor_key=TRUE) %>% 
     dplyr::mutate(value=dplyr::recode_factor(value, a="a", .missing = "Missing")) %>% 
     dplyr::count(key, value) %>% 
-    dplyr::mutate(perc = 100 * round(n/nrow(cat_vars), 3),
+    dplyr::mutate(perc = 100 * round(n/nrow(vars), 3),
                   perc = paste0("(", format(perc, nsmall = 1, trim = TRUE), "%)")) %>% 
     dplyr::ungroup()
   if(!show.missing){
@@ -37,19 +40,26 @@ cat_descriptives_table <- function(cat_vars, var.names = NULL, caption=NULL, sho
   }
   if(is.null(var.names)){
     var.names <- unique(table$key)
-  } else if (var.names == "labels"){
+  } else if (all(var.names == "labels")){
     var.names <- unique(table$key)
   } else {
     stopifnot(length(var.names) == length(unique(table$key)))
   }
-  n.rgroup <- dplyr::count(table, key)$nn
-  htmlTable::htmlTable(dplyr::select(table, -key), 
-                       header = c("", "", ""),
-                       rnames = FALSE, 
-                       align = "lrr",
-                       rgroup = var.names, 
-                       n.rgroup = n.rgroup,
-                       caption = caption, ...)
+  if(type == "htmlTable"){
+    n.rgroup <- dplyr::count(table, key)$nn
+    htmlTable::htmlTable(dplyr::select(table, -key), 
+                         header = c("", "", ""),
+                         rnames = FALSE, 
+                         align = "lrr",
+                         rgroup = var.names, 
+                         n.rgroup = n.rgroup,
+                         caption = caption, ...)
+  } else if (type == "pander"){
+    class(table) <- "data.frame"
+    row.names(table) <- table$key
+    pander::pander(dplyr::select(table, -key), 
+                   caption=caption, ...)
+  } else warning("type must be htmlTable or pander")
 }
 
 #' Binary vectors
@@ -76,28 +86,30 @@ is.binary <- function(x){
 #'@inheritParams cat_descriptives_table
 #'
 #' @export
-bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent above threshold", caption=NULL, show.missing = TRUE, show.n = FALSE, show.n.sucess = FALSE, ...){
-  stopifnot(require(dplyr), require(tidyr), require(htmlTable))
+bin_descriptives_table <- function(vars, var.names = NULL, header = "Percent above threshold", caption=NULL, show.missing = TRUE, show.n = FALSE, show.n.sucess = FALSE, type="htmlTable", ...){
+  stopifnot(require(dplyr), require(tidyr))
+  if(type == "htmlTable") stopifnot(require(htmlTable))
+  if(type == "pander") stopifnot(require(pander))
   
   # convert factors to numeric
-  factors <- data.frame(bin_vars[, sapply(bin_vars, is.factor)])
-  colnames(factors) <- colnames(bin_vars)[sapply(bin_vars, is.factor)]
+  factors <- data.frame(vars[, sapply(vars, is.factor)])
+  colnames(factors) <- colnames(vars)[sapply(vars, is.factor)]
   if(ncol(factors) > 0){
     factors <- mutate_all(factors, funs(as.numeric(.) - 1))
-    bin_vars <- cbind(bin_vars[, !sapply(bin_vars, is.factor)], factors)
+    vars <- cbind(vars[, !sapply(vars, is.factor)], factors)
   }
   
-  stopifnot(all(as.matrix(dplyr::summarize_all(bin_vars, is.binary))))
+  stopifnot(all(as.matrix(dplyr::summarize_all(vars, is.binary))))
   
   if(!is.null(var.names)){
-    if(var.names == "labels") bin_vars <- use_var_labels(bin_vars)
+    if(all(var.names == "labels")) vars <- use_var_labels(vars)
   } 
   
-  table <- bin_vars %>% 
+  table <- vars %>% 
     tidyr::gather(factor_key=TRUE) %>% 
     dplyr::group_by(key) %>% 
     dplyr::summarise_all(funs(prop = mean, count_missing, count_obs, count_sucess = sum), na.rm=TRUE) %>% 
-    dplyr::mutate(perc_missing = 100 * round(count_missing/nrow(bin_vars), 3),
+    dplyr::mutate(perc_missing = 100 * round(count_missing/nrow(vars), 3),
                   perc_missing = paste0("(", format(perc_missing, nsmall = 1, trim = TRUE), "%)"),
                   perc = paste0(format(100 * round(prop, 3), nsmall = 1, trim = TRUE), "%")) %>% 
     tidyr::unite("Missing", count_missing, perc_missing, sep = " ") %>% 
@@ -127,7 +139,7 @@ bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent
   
     if(is.null(var.names)){
       var.names <- unique(table$key)
-    } else if (var.names == "labels"){
+    } else if (all(var.names == "labels")){
       var.names <- unique(table$key)
     } else {
       stopifnot(length(var.names) == length(unique(table$key)))
@@ -136,12 +148,20 @@ bin_descriptives_table <- function(bin_vars, var.names = NULL, header = "Percent
   ncol <- 1 + sum(show.missing, show.n, show.n.sucess)
   align <- paste(rep("r", ncol), collapse = "")
   
-  
+  if(type == "htmlTable"){
     htmlTable::htmlTable(dplyr::select(table, -key), 
                          header = tab_header,
                          align = align,
                          rnames = var.names, 
                          caption = caption, ...)
+  } else if (type == "pander"){
+    class(table) <- "data.frame"
+    row.names(table) <- var.names
+    colnames(table) <- c("key", tab_header)
+    pander::pander(dplyr::select(table, -key), 
+                   caption = caption, ...)
+  } else warning("type must be htmlTable or pander")
+    
 }
 
 
@@ -198,19 +218,21 @@ use_var_labels <- function(df){
 #'@inheritParams cat_descriptives_table
 #'
 #' @export
-cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, show.missing = TRUE, ...){
-  stopifnot(require(dplyr), require(tidyr), require(htmlTable))
+cont_descriptives_table <- function(vars, var.names = NULL, caption=NULL, show.missing = TRUE, type= "htmlTable",...){
+  stopifnot(require(dplyr), require(tidyr))
+  if(type == "htmlTable") stopifnot(require(htmlTable))
+  if(type == "pander") stopifnot(require(pander))
   
   if(!is.null(var.names)){
-    if(var.names == "labels") cont_vars <- use_var_labels(cont_vars)
+    if(all(var.names == "labels")) vars <- use_var_labels(vars)
   }
   
-  table <- cont_vars %>% 
+  table <- vars %>% 
     dplyr::mutate_all(as.numeric) %>% 
     tidyr::gather(factor_key=TRUE) %>% 
     dplyr::group_by(key) %>% 
     dplyr::summarise_all(funs(mean, sd, count_missing), na.rm=TRUE) %>% 
-    dplyr::mutate(perc_missing = 100 * round(count_missing/nrow(cont_vars), 3),
+    dplyr::mutate(perc_missing = 100 * round(count_missing/nrow(vars), 3),
                   perc_missing = paste0("(", format(perc_missing, nsmall = 1, trim = TRUE), "%)"),
                   mean = format(round(mean, 2), nsmall = 2, trim = TRUE),
                   sd = format(round(sd, 2), nsmall = 2, trim = TRUE)) %>% 
@@ -219,26 +241,41 @@ cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, s
   
   if(is.null(var.names)){
     var.names <- unique(table$key)
-  } else if (var.names == "labels"){
+  } else if (all(var.names == "labels")){
     var.names <- unique(table$key)
   } else {
     stopifnot(length(var.names) == length(unique(table$key)))
   }
 
   
-  if(show.missing){
-    htmlTable::htmlTable(dplyr::select(table, -key), 
-                         header = c("Mean", "SD", "Missing"),
-                         rnames = var.names, 
-                         align = "rrr",
-                         caption = caption, ...)
-  } else {
-    htmlTable::htmlTable(dplyr::select(table, -key, -Missing), 
-                         header = c("Mean", "SD"),
-                         rnames = var.names, 
-                         align = "rr",
-                         caption = caption)
-  }
+  if(type == "htmlTable"){
+    if(show.missing){
+      htmlTable::htmlTable(dplyr::select(table, -key), 
+                           header = c("Mean", "SD", "Missing"),
+                           rnames = var.names, 
+                           align = "rrr",
+                           caption = caption, ...)
+    } else {
+      htmlTable::htmlTable(dplyr::select(table, -key, -Missing), 
+                           header = c("Mean", "SD"),
+                           rnames = var.names, 
+                           align = "rr",
+                           caption = caption, ...)
+    }
+  } else if(type == "pander"){
+    class(table) <- "data.frame"
+    row.names(table) <- var.names
+    colnames(table) <- c("key", "Mean", "SD", "Missing")
+    if(show.missing){
+      pander::pander(dplyr::select(table, -key), 
+                     caption = caption, 
+                     style = "rmarkdown", ...)
+    } else {
+      pander::pander(dplyr::select(table, -key, -Missing), 
+                     caption = caption, 
+                     style = "rmarkdown", ...)
+    }
+  } else warning("type must be htmlTable or pander")
 }
 
 #' Correlations table, with optional descriptives
@@ -246,30 +283,30 @@ cont_descriptives_table <- function(cont_vars, var.names = NULL, caption=NULL, s
 #'@inheritParams cat_descriptives_table
 #'
 #' @export
-corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE, show.means = FALSE, digits = 2, stars = FALSE, ...){
+corr_table <- function(vars, var.names = NULL, caption = NULL, plot = FALSE, show.means = FALSE, digits = 2, stars = FALSE, ...){
   stopifnot(require(dplyr), require(tidyr), require(htmlTable), require(corrr))
   
-  stopifnot(is.data.frame(cont_vars))
+  stopifnot(is.data.frame(vars))
   
   if(is.null(var.names)){
-  } else if(var.names == "labels") { 
-    cont_vars <- use_var_labels(cont_vars)
+  } else if(all(var.names == "labels")) { 
+    vars <- use_var_labels(vars)
   } else {
-    stopifnot(length(var.names) == length(colnames(cont_vars)))
-    colnames(cont_vars) <- var.names
+    stopifnot(length(var.names) == length(colnames(vars)))
+    colnames(vars) <- var.names
   }
   
-  table <- cont_vars %>% 
+  table <- vars %>% 
     corrr::correlate(use="pairwise.complete.obs") %>% 
     corrr::shave(upper = FALSE) %>% 
     corrr::fashion()
-  row.names(table) <- paste(1:ncol(cont_vars), row.names(table), sep = ". ")
+  row.names(table) <- paste(1:ncol(vars), row.names(table), sep = ". ")
   # n.rgroup sets how to add horizontal lines to the table (only needed if adding descriptive stats below)
   n.rgroup <- NULL 
   
   if(stars){
     stopifnot(require(Hmisc))
-    p_vals <- rcorr(as.matrix(cont_vars), type="pearson")$P 
+    p_vals <- rcorr(as.matrix(vars), type="pearson")$P 
     p_vals <- ifelse(p_vals < .001, "***", 
                      ifelse(p_vals < .01, "** ",
                             ifelse(p_vals < .05, "*  ",
@@ -285,7 +322,7 @@ corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE
   if(plot){
     stopifnot(require(ggplot2))
     
-    p <- cont_vars %>% 
+    p <- vars %>% 
       correlate(use="pairwise.complete.obs") %>% 
       rearrange(absolute = FALSE) %>% 
       shave(upper = FALSE) %>% 
@@ -293,7 +330,7 @@ corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE
     print(p)
   }
   if(show.means){
-    means.table <- cont_vars %>% 
+    means.table <- vars %>% 
       tidyr::gather("key", "value", factor_key = TRUE) %>% 
       dplyr::group_by(key) %>% 
       dplyr::summarize(Mean = round(mean(value, na.rm = TRUE), digits), 
@@ -310,11 +347,11 @@ corr_table <- function(cont_vars, var.names = NULL, caption = NULL, plot = FALSE
     # add descriptive stats as additional rows below the correlations table
     table <- rbind(table, means.table)
     # use row row grouping in the table
-    n.rgroup <- c(ncol(cont_vars), 3)
+    n.rgroup <- c(ncol(vars), 3)
   }
     htmlTable::htmlTable(table,
                          caption = caption,
-                         header = 1:ncol(cont_vars),
+                         header = 1:ncol(vars),
                          rgroup = rep("", length(n.rgroup)),
                          n.rgroup = n.rgroup, ...)
 }

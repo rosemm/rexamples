@@ -4,16 +4,20 @@
 \alias{cont_descriptives_table}
 \title{Continuous descriptives table}
 \usage{
-cont_descriptives_table(cont_vars, var.names = NULL, caption = NULL,
-  show.missing = TRUE, ...)
+cont_descriptives_table(vars, var.names = NULL, caption = NULL,
+  show.missing = TRUE, type = "htmlTable", ...)
 }
 \arguments{
-\item{var.names}{an (optional) vector of strings the variable names (will use the column names in cat_vars if none are provided here). 
+\item{vars}{a dataframe of the categorical variables (factors) to include in the table}
+
+\item{var.names}{an (optional) vector of strings the variable names (will use the column names in vars if none are provided here). 
 If var.names is simply "labels" then it will attempt to use variable labels that may have been read in when the dataframe was created (see \code{\link{use_var_labels}}).}
 
 \item{caption}{an (optional) caption to add to the table}
 
-\item{...}{additional arguments passed to \code{\link[htmlTable]{htmlTable}}}
+\item{type}{specify which function to use to generate the table (\code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}})}
+
+\item{...}{additional arguments passed to \code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}}}
 }
 \description{
 Continuous descriptives table
