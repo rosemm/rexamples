@@ -1,6 +1,6 @@
 #' Pretty table for descriptives of categorical variables
 #'
-#' Uses \code{\link[htmlTable]{htmlTable}} to produce nicely formated tables summarizing a set of categorical variables.
+#' Uses \code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}} to produce nicely formated tables summarizing a set of categorical variables.
 #'
 #' @param vars a dataframe of the variables to include in the table
 #' @param var.names an (optional) vector of strings the variable names (will use the column names in vars if none are provided here). 
@@ -28,6 +28,13 @@ cat_descriptives_table <- function(vars, var.names = NULL, caption=NULL, show.mi
   if(!is.null(var.names)){
     if(all(var.names == "labels")) vars <- use_var_labels(vars)
   }
+  # make sure all variables are treated as factors
+  if(!all(unlist(lapply(vars, is.factor)))) warning("All variables must be factors")
+  stopifnot(all(unlist(lapply(vars, is.factor))))
+  
+  # note the order of levels, to use in sorting the table later
+  l <- lapply(vars, levels) %>% unlist()
+  level_order <- data.frame(value=l, order=1:length(l), stringsAsFactors = FALSE)
   
   table <- vars %>% 
     tidyr::gather(factor_key=TRUE) %>% 
@@ -35,7 +42,12 @@ cat_descriptives_table <- function(vars, var.names = NULL, caption=NULL, show.mi
     dplyr::count(key, value) %>% 
     dplyr::mutate(perc = 100 * round(n/nrow(vars), 3),
                   perc = paste0("(", format(perc, nsmall = 1, trim = TRUE), "%)")) %>% 
-    dplyr::ungroup()
+    dplyr::ungroup() %>% 
+    # sort by level_order
+    dplyr::left_join(level_order, by="value") %>% 
+    dplyr::arrange(order) %>% 
+    dplyr::select(-order)
+  
   if(!show.missing){
     table <- table %>% 
       dplyr::filter(value != "Missing") 
@@ -84,6 +96,8 @@ is.binary <- function(x){
 }
 
 #' Binary descriptives table
+#' 
+#' Uses \code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}} to produce nicely formated tables summarizing a set of binary (e.g. yes/no) variables.
 #'
 #'@inheritParams cat_descriptives_table
 #'
@@ -217,6 +231,8 @@ use_var_labels <- function(df){
 
 #' Continuous descriptives table
 #'
+#' Uses \code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}} to produce nicely formated tables summarizing a set of continuous variables.
+#'
 #'@inheritParams cat_descriptives_table
 #'
 #' @export
@@ -281,6 +297,9 @@ cont_descriptives_table <- function(vars, var.names = NULL, caption=NULL, show.m
 }
 
 #' Correlations table, with optional descriptives
+#' 
+#' Uses \code{\link[corrr]{fashion}} and \code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}} to produce nicely formated correlation table, 
+#' optionally including means, SD, min and max for each variable below the correlation table. If plot=TRUE, will also produce a visual of the correlations. 
 #'
 #'@inheritParams cat_descriptives_table
 #'
