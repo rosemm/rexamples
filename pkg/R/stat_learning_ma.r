@@ -1,10 +1,19 @@
-library(RefManageR)
-bib <- ReadBib("savedrecs_all.bib", check = "error")
-# when entries failed to read in because of missing editors, I added: editor = {{RM: unknown}}
+# library(RefManageR)
+# bib <- ReadBib("/Users/TARDIS/Documents/STUDIES/contexts_in_IDS/reports/savedrecs_all.bib", check = "error")
 
 # code for suitability for meta-analysis
-CodeBibs <- function(bib){
+code_bibs <- function(bib, dir = getwd(), use_bib_file="ma_bib.csv", return=TRUE, save=!return){
+  stopifnot(require(RefManageR))
+  
   Nbibs <- length(bib)
+  
+  if(!use_bib_file %in% list.files(dir)){
+    use_bib <- data.frame(author=NULL, year=NULL,title=NULL, journal=NULL, use=NULL, Notes=NULL)
+  } else {
+    use_bib <- read.csv(file=file.path(dir, use_bib_file), header=TRUE)
+  }
+  
+  coded <- NULL
   
   all_done <- FALSE
   for(b in 1:Nbibs){
@@ -14,36 +23,48 @@ CodeBibs <- function(bib){
       message(paste("article", b, "of", Nbibs)) 
       message(bib[b]$title)
       message(paste("journal:", bib[b]$journal))
+      message(paste("keywords:", bib[b]$keyword))
       message(bib[b]$abstract)
       
       confirm <- "n"
-        while(!grepl("y", confirm)){
-          ma_use <- paste("{", readline("Suitable for meta-analysis? (y/n/m) "), "}", sep="")
+        while(!grepl(pattern="y", x=tolower(confirm))){
+          ma_use <- readline("Type q to quit.\nSuitable for meta-analysis? (y/n/m) ")
           confirm <- readline("Confirm? (y/n) ")
-          if(!grepl("y", confirm))  message("Please re-enter.")
+          if(!grepl(pattern="y", x=tolower(confirm)))  message("Please re-enter.")
         }
       
-      bib[b]$ma_use <- ma_use
+      if(grepl(pattern = "y|m", x=tolower(ma_use))){
+        title <- gsub(x=bib[b]$title, pattern = "[{](.*)[]}]", replacement = "\\1") # remove brackets
+        title <- gsub(x=title, pattern = "([[:space:]]+)", replacement = " ") # remove extra white space
+        
+        this_bib <- data.frame(author=paste(bib[b]$author, collapse = "; "), 
+                               year=as.numeric(gsub(x=bib[b]$year, pattern = ".*([[:digit:]]{4}).*", replacement = "\\1")),
+                               title=title, 
+                               journal=gsub(x=bib[b]$journal, pattern = "[{](.*)[]}]", replacement = "\\1"), 
+                               use=ma_use, 
+                               Notes=readline("Notes? "))
+        use_bib <- rbind(use_bib, this_bib)
+      } 
       
-      if(!grepl("n", ma_use)) bib[b]$ma_age <- paste("{", readline("What age participants? "), "}", sep="")
-
-      bib[b]$ma_notes <- paste("{", readline("Notes? "), "}", sep="") 
+      if(grepl(pattern="q", x=tolower(ma_use))){
+        all_done <- grepl(pattern="n", x=readline("Keep going? "))
+      } else {
+        # keep track of which records have already been coded
+        coded <- c(coded, b)
+      }
       
-      all_done <- grepl("n", readline("Keep going? "))
     } 
-    if(all_done==TRUE) break
+    if(all_done==TRUE) {
+      if(save){
+        write.csv(use_bib, file=file.path(dir, use_bib_file), row.names = FALSE)
+        bib_in_progress <- bib[-coded]
+        save(bib_in_progress, file=file.path(dir, "ma_bib_in_progress.RData"))
+      }
+      break
+    }
   }
-  return(bib)
+  if(return) return(list(bib=bib, use_bib=use_bib))
 }
 
 
-coded.bib <- CodeBibs(bib) # first time
-
-coded.bib <- CodeBibs(coded.bib) # subsequent times
-
-# what's the current list of articles that should (maybe) be included? (y or m answer to "suitable for meta-analysis?")
-for(b in 1:length(coded.bib)){
-  if(!is.null(coded.bib[[b]]$ma_use)){
-    if( !grepl("n", coded.bib[[b]]$ma_use) ) print(coded.bib[[b]])
-  }
-}    
+# code_bibs(bib, dir="/Users/TARDIS/Documents/STUDIES/contexts_in_IDS/reports", return=FALSE, save=TRUE)
