@@ -24,7 +24,7 @@ code_bibs <- function(bib, dir = getwd(), use_bib_file="ma_bib.csv", return=TRUE
   all_done <- FALSE
   for(b in 1:Nbibs){
     
-    if( is.null(bib[b]$ma_use) & !is.null(bib[b]$abstract) ){
+    if( !is.null(bib[b]$abstract) ){
       
       message(paste("article", b, "of", Nbibs)) 
       message(bib[b]$title)
@@ -36,6 +36,7 @@ code_bibs <- function(bib, dir = getwd(), use_bib_file="ma_bib.csv", return=TRUE
         while(!grepl(pattern="y", x=tolower(confirm))){
           ma_use <- readline("Type q to quit.\nSuitable for meta-analysis? (y/n/m) ")
           confirm <- readline("Confirm? (y/n) ")
+          if(!grepl(pattern ="^y|n|m" , x=tolower(ma_use))) confirm <- "n"
           if(!grepl(pattern="y", x=tolower(confirm)))  message("Please re-enter.")
         }
       
@@ -76,10 +77,12 @@ code_bibs <- function(bib, dir = getwd(), use_bib_file="ma_bib.csv", return=TRUE
                              use="m", 
                              Notes="Abstract not available.")
       use_bib <- rbind(use_bib, this_bib)
+      # keep track of which records have already been coded
+      coded <- c(coded, b)
     }
     if(all_done==TRUE) {
       if(save){
-        write.csv(use_bib, file=file.path(dir, use_bib_file), row.names = FALSE)
+        write.csv(unique(use_bib), file=file.path(dir, use_bib_file), row.names = FALSE)
         bib_in_progress <- bib[-coded]
         save(bib_in_progress, file=file.path(dir, "ma_bib_in_progress.RData"))
       }
