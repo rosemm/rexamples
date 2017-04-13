@@ -36,7 +36,7 @@ code_bibs <- function(bib, dir = getwd(), use_bib_file="ma_bib.csv", return=TRUE
         while(!grepl(pattern="y", x=tolower(confirm))){
           ma_use <- readline("Type q to quit.\nSuitable for meta-analysis? (y/n/m) ")
           confirm <- readline("Confirm? (y/n) ")
-          if(!grepl(pattern ="^y|n|m" , x=tolower(ma_use))) confirm <- "n"
+          if(!grepl(pattern ="^y|n|m|q" , x=tolower(ma_use))) confirm <- "n"
           if(!grepl(pattern="y", x=tolower(confirm)))  message("Please re-enter.")
         }
       
