@@ -1,13 +1,8 @@
 # library(RefManageR)
 # bib <- ReadBib("/Users/TARDIS/Documents/STUDIES/contexts_in_IDS/reports/savedrecs_all.bib", check = "error")
 
-# Results: 1,208
-# (from Web of Science Core Collection)
-# You searched for: TOPIC: (context) AND TOPIC: (infants)
-# Refined by: WEB OF SCIENCE CATEGORIES: ( PSYCHOLOGY DEVELOPMENTAL ) AND DOCUMENT TYPES: ( ARTICLE )
-# Timespan: All years. Indexes: SCI-EXPANDED, SSCI, ESCI.
-
 # code for suitability for meta-analysis
+#' @export
 code_bibs <- function(bib, dir = getwd(), use_bib_file="ma_bib.csv", return=TRUE, save=!return){
   stopifnot(require(RefManageR))
   
@@ -91,6 +86,5 @@ code_bibs <- function(bib, dir = getwd(), use_bib_file="ma_bib.csv", return=TRUE
   }
   if(return) return(list(bib=bib, use_bib=use_bib))
 }
-
 
 # code_bibs(bib, dir="/Users/TARDIS/Documents/STUDIES/contexts_in_IDS/reports", return=FALSE, save=TRUE)
