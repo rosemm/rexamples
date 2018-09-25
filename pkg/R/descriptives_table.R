@@ -309,7 +309,7 @@ corr_table <- function(vars, var.names = NULL, caption = NULL, plot = FALSE, sho
   
   stopifnot(is.data.frame(vars))
   
-  if(is.null(var.names)){
+  if(!is.null(var.names)){
   } else if(all(var.names == "labels")) { 
     vars <- use_var_labels(vars)
   } else {
@@ -320,8 +320,9 @@ corr_table <- function(vars, var.names = NULL, caption = NULL, plot = FALSE, sho
   table <- vars %>% 
     corrr::correlate(use="pairwise.complete.obs") %>% 
     corrr::shave(upper = FALSE) %>% 
-    corrr::fashion()
-  row.names(table) <- paste(1:ncol(vars), row.names(table), sep = ". ")
+    corrr::fashion() 
+  row.names(table) <- paste(1:ncol(vars), table$rowname, sep = ". ")
+  table$rowname <- NULL # drop extra column
   # n.rgroup sets how to add horizontal lines to the table (only needed if adding descriptive stats below)
   n.rgroup <- NULL 
   
@@ -351,7 +352,7 @@ corr_table <- function(vars, var.names = NULL, caption = NULL, plot = FALSE, sho
     print(p)
   }
   if(show.means){
-    means.table <- vars %>% 
+    means.stats <- vars %>% 
       tidyr::gather("key", "value", factor_key = TRUE) %>% 
       dplyr::group_by(key) %>% 
       dplyr::summarize(Mean = round(mean(value, na.rm = TRUE), digits), 
@@ -360,10 +361,12 @@ corr_table <- function(vars, var.names = NULL, caption = NULL, plot = FALSE, sho
                 max = round(max(value, na.rm = TRUE), digits)) %>% 
       # convert min and max to Range
       tidyr::unite(Range, min, max, sep = " - ") %>% 
-      dplyr::ungroup() %>% 
+      dplyr::ungroup()
+    means.table <- means.stats %>% 
       # transpose table so variables are across the top and each row is a summary stat
       dplyr::select(-key) %>% 
       t()
+    colnames(means.table) <- means.stats$key
     
     # add descriptive stats as additional rows below the correlations table
     table <- rbind(table, means.table)
