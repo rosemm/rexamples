@@ -18,5 +18,5 @@ print_lm <- function(model, digits = 2, digits_p = 3){
   df1 <- summary(model)$fstatistic["numdf"]
   df2 <- summary(model)$fstatistic["dendf"]
   p <- pf(f,df1,df2, lower.tail = FALSE)
-  paste0("R² = ", print_r(rsq, digits), ", F(", df1, ", ", df2, ") = ", round(f, digits), ", ", print_p(p, digits_p) )
+  paste0("R2 = ", print_r(rsq, digits), ", F(", df1, ", ", df2, ") = ", round(f, digits), ", ", print_p(p, digits_p) )
 }
