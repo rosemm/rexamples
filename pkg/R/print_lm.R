@@ -1,12 +1,12 @@
 #' Print regression summary inline 
 #' 
-#' Prints a string that summarizes lm model result in APA format, like "R² = .07, F(1, 18) = 1.42, p = .249"
+#' Prints a string that summarizes lm model result in APA format
 #'  
 #' @param model a model object resulting from lm
 #' @param digits digits to round R² and F statistic to
 #' @param digits_p digits to round the p value to
 #' 
-#' @return A string with the model results in APA format, like "R² = .07, F(1, 18) = 1.42, p = .249".
+#' @return A string with the model results in APA format, like "R<sup>2</sup> = .07, F(1, 18) = 1.42, p = .249".
 #' 
 #' @examples
 #' print_lm(lm(mpg ~ wt, data = mtcars))
