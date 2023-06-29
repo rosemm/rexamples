@@ -7,7 +7,6 @@
 #' @param p a number, like from a significance test
 #' @param digits digits to round to
 #' 
-#' @export
 print_p <- function(p, digits = 3){
   if (p < .001){
     p_statement <- "p < .001"
