@@ -4,7 +4,8 @@ Title: Rose Hartman examples and handy functions in R
 Version: 1.0
 Date: 2016-11-04
 Author: Rose Hartman
-Maintainer: Rose Hartman <rose@understandingdata.net>
+Maintainer: Rose Hartman <hartmanr1@chop.edu>
 Description: More about what it does (maybe more than one line)
 License: What license is it under?
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.3
+Encoding: UTF-8

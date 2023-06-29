@@ -6,13 +6,10 @@
 #' @param digits digits to round R² and F statistic to
 #' @param digits_p digits to round the p value to
 #' 
-#' @return A string with the model results in APA format, like "R<sup>2</sup> = .07, F(1, 18) = 1.42, p = .249".
+#' @return A string with the model results in APA format, like "R2 = .07, F(1, 18) = 1.42, p = .249".
 #' 
 #' @examples
 #' print_lm(lm(mpg ~ wt, data = mtcars))
-#' 
-#' @seealso \code{\link[stats]{lm}} for creating the model object
-#' and \code{\link[stats]{summary.lm}}
 #' 
 #' @export
 print_lm <- function(model, digits = 2, digits_p = 3){

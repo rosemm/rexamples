@@ -19,9 +19,9 @@ computes the mean, reverses the transformation, and squares the result to return
 }
 \section{Functions}{
 \itemize{
-\item \code{ave_Rsq}: Calculate average of squared correlations
-}}
+\item \code{ave_Rsq()}: Calculate average of squared correlations
 
+}}
 \seealso{
 \code{\link[base]{atanh}} for computing 
 \href{https://en.wikipedia.org/wiki/Fisher_transformation}{Fisher's r-to-z transformation}, 
