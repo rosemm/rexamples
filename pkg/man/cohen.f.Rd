@@ -35,4 +35,3 @@ Cohen, J. (1988). Statistical power analysis for the behavioral sciences (2nd ed
 \seealso{
 \code{\link[pwr]{pwr.anova.test}}, \code{\link[effsize]{cohen.d}}
 }
-

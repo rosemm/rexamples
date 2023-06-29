@@ -20,4 +20,3 @@ is.binary(mtcars$gear) # FALSE
 is.binary(c(mtcars$vs, NA)) # TRUE
 
 }
-

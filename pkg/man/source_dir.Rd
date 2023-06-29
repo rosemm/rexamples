@@ -27,4 +27,3 @@ source_dir("lib")
 \seealso{
 \code{\link[base]{source}}
 }
-

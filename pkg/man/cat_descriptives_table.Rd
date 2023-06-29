@@ -4,8 +4,14 @@
 \alias{cat_descriptives_table}
 \title{Pretty table for descriptives of categorical variables}
 \usage{
-cat_descriptives_table(vars, var.names = NULL, caption = NULL,
-  show.missing = TRUE, type = "htmlTable", ...)
+cat_descriptives_table(
+  vars,
+  var.names = NULL,
+  caption = NULL,
+  show.missing = TRUE,
+  type = "htmlTable",
+  ...
+)
 }
 \arguments{
 \item{vars}{a dataframe of the variables to include in the table}
@@ -32,4 +38,3 @@ select(wool, tension) \%>\%
 cat_descriptives_table(var.names=c("Type of wool", "Level of tension"))
 
 }
-

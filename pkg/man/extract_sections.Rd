@@ -53,4 +53,3 @@ extract_sections(file = homework_all_solutions.Rmd, section=c(1,2,5,8), solution
 extract_sections(file = homework_all_solutions.Rmd, section=c(1,2,5,8), solutions = TRUE)
 
 }
-

@@ -4,8 +4,14 @@
 \alias{mi_cor}
 \title{Correlations table from multiply imputed datasets}
 \usage{
-mi_cor(data, vars = NULL, format = c("Amelia", "SPSS"), means = TRUE,
-  caption = "Correlations", method = "pearson")
+mi_cor(
+  data,
+  vars = NULL,
+  format = c("Amelia", "SPSS"),
+  means = TRUE,
+  caption = "Correlations",
+  method = "pearson"
+)
 }
 \arguments{
 \item{data}{Either the output from \code{\link[Amelia]{amelia}} or a dataframe with a column \code{Imputation_} to mark each imputed dataset, as is produced by the imputation procedure in SPSS}
@@ -23,4 +29,3 @@ mi_cor(data, vars = NULL, format = c("Amelia", "SPSS"), means = TRUE,
 \description{
 Correlations table from multiply imputed datasets
 }
-

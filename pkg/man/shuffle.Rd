@@ -21,4 +21,3 @@ shuffle(x)
 \seealso{
 \code{\link[base]{sample}}
 }
-

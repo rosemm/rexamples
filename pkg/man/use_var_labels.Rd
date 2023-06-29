@@ -18,4 +18,3 @@ read with either \code{\link[forign]{read.spss}} or \code{\link[haven]{read_spss
 If available, it will overwrite the column names of df with variable names.
 For any columns where variable labels are not available, the original column names will be retained.
 }
-

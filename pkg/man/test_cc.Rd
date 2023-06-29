@@ -28,4 +28,3 @@ Rencher, A. C. (2002). Methods of multivariate analysis, 2nd ed. John Wiley & So
 \seealso{
 \code{\link[CCA]{cc}}
 }
-

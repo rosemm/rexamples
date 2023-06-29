@@ -4,8 +4,14 @@
 \alias{cont_descriptives_table}
 \title{Continuous descriptives table}
 \usage{
-cont_descriptives_table(vars, var.names = NULL, caption = NULL,
-  show.missing = TRUE, type = "htmlTable", ...)
+cont_descriptives_table(
+  vars,
+  var.names = NULL,
+  caption = NULL,
+  show.missing = TRUE,
+  type = "htmlTable",
+  ...
+)
 }
 \arguments{
 \item{vars}{a dataframe of the variables to include in the table}
@@ -25,4 +31,3 @@ If var.names is simply "labels" then it will attempt to use variable labels that
 \description{
 Uses \code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}} to produce nicely formated tables summarizing a set of continuous variables.
 }
-

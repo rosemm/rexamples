@@ -25,4 +25,3 @@ x <- xtabs(~ cyl + gear, data = mtcars)
 xtabs_table(x, var.names = c("Number of cylinders", "Number of gears"))
 
 }
-

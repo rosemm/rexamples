@@ -14,4 +14,3 @@ add_cor_stars(cor, stars)
 \description{
 Add significance stars to a correlations table
 }
-

@@ -4,8 +4,16 @@
 \alias{corr_table}
 \title{Correlations table, with optional descriptives}
 \usage{
-corr_table(vars, var.names = NULL, caption = NULL, plot = FALSE,
-  show.means = FALSE, digits = 2, stars = FALSE, ...)
+corr_table(
+  vars,
+  var.names = NULL,
+  caption = NULL,
+  plot = FALSE,
+  show.means = FALSE,
+  digits = 2,
+  stars = FALSE,
+  ...
+)
 }
 \arguments{
 \item{vars}{a dataframe of the variables to include in the table}
@@ -21,4 +29,3 @@ If var.names is simply "labels" then it will attempt to use variable labels that
 Uses \code{\link[corrr]{fashion}} and \code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}} to produce nicely formated correlation table, 
 optionally including means, SD, min and max for each variable below the correlation table. If plot=TRUE, will also produce a visual of the correlations.
 }
-

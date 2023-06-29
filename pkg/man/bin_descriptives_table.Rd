@@ -4,9 +4,17 @@
 \alias{bin_descriptives_table}
 \title{Binary descriptives table}
 \usage{
-bin_descriptives_table(vars, var.names = NULL,
-  header = "Percent above threshold", caption = NULL, show.missing = TRUE,
-  show.n = FALSE, show.n.sucess = FALSE, type = "htmlTable", ...)
+bin_descriptives_table(
+  vars,
+  var.names = NULL,
+  header = "Percent above threshold",
+  caption = NULL,
+  show.missing = TRUE,
+  show.n = FALSE,
+  show.n.sucess = FALSE,
+  type = "htmlTable",
+  ...
+)
 }
 \arguments{
 \item{vars}{a dataframe of the variables to include in the table}
@@ -26,4 +34,3 @@ If var.names is simply "labels" then it will attempt to use variable labels that
 \description{
 Uses \code{\link[htmlTable]{htmlTable}} or \code{\link[pander]{pander}} to produce nicely formated tables summarizing a set of binary (e.g. yes/no) variables.
 }
-

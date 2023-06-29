@@ -29,4 +29,3 @@ simple_effects(data = warpbreaks, outcome = "breaks", by = "wool", test = "tensi
 simple_effects(data = warpbreaks, outcome = "breaks", by = "tension", test = "wool")
 
 }
-
